@@ -1313,7 +1313,13 @@
         "uploadFailed": "Error al subir.",
         "fileTooLarge": "El archivo pesa {size} MB; el límite es 16 MB.",
         "defaultOptionTitle": "Opción",
-        "optionN": "Opción {n}"
+        "optionN": "Opción {n}",
+        "saveAnswerAsLabel": "Guardar respuesta como (opcional)",
+        "saveAnswerAsPlaceholder": "p. ej. bhk, presupuesto",
+        "saveAnswerAsHelp": "Guarda el título de la opción elegida como variable. Si un campo del contacto tiene el mismo nombre, la respuesta también se guarda en el contacto.",
+        "endWebhookLabel": "Enviar respuestas a URL (opcional)",
+        "endWebhookPlaceholder": "https://…",
+        "endWebhookHelp": "Cuando un cliente llega a este nodo, su nombre, teléfono y respuestas guardadas se envían aquí como JSON — por ejemplo, un webhook de Power Automate o Make que añade una fila a Excel."
       },
       "categories": {
         "messaging": "Mensajería",
@@ -2428,7 +2434,8 @@
       "setTagNeedsTag": "El nodo Etiquetar contacto necesita una etiqueta para aplicar.",
       "setTagNeedsNext": "El nodo Etiquetar contacto debe apuntar a un nodo siguiente.",
       "setTagMissingNext": "El nodo Etiquetar contacto apunta a un nodo inexistente: \"{key}\".",
-      "unknownNodeType": "Tipo de nodo desconocido: \"{type}\"."
+      "unknownNodeType": "Tipo de nodo desconocido: \"{type}\".",
+      "endWebhookInvalid": "La URL de respuestas debe empezar con http:// o https://."
     },
     "automations": {
       "needsStep": "las automatizaciones activas necesitan al menos un paso",

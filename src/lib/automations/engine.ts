@@ -25,6 +25,7 @@ import { engineSendText, engineSendTemplate, engineSendInteractive } from './met
 import { validateInteractivePayload } from '@/lib/whatsapp/interactive'
 import { isDeliverableUrl } from '@/lib/webhooks/ssrf'
 import { getT } from '@/lib/i18n/translate'
+import { fieldKey } from '@/lib/contacts/field-key'
 
 /** Step errors land in automation_logs and are shown on the logs page. */
 const tErr = getT('LibErrors.engine')
@@ -877,7 +878,12 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
       if (!(await isDeliverableUrl(cfg.url))) {
         throw new Error(tErr('destinationNotAllowed'))
       }
-      const body = cfg.body_template ? interpolate(cfg.body_template, args) : JSON.stringify(args.context)
+      // {{contact.*}} placeholders (name, phone, custom fields) are only
+      // resolved here, so other steps pay no extra lookup.
+      const contactVars = cfg.body_template ? await loadContactVars(args) : {}
+      const body = cfg.body_template
+        ? interpolate(cfg.body_template, args, contactVars)
+        : JSON.stringify(args.context)
       const res = await fetch(cfg.url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...(cfg.headers ?? {}) },
@@ -888,7 +894,12 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
         redirect: 'manual',
         signal: AbortSignal.timeout(10_000),
       })
-      if (!res.ok) throw new Error(tErr('webhookStatus', { status: String(res.status) }))
+      // Redirects are not followed (see above), so a 3xx is the
+      // receiver's own answer, not a failure: Google Apps Script web
+      // apps, for one, run the script and then reply 302.
+      if (!res.ok && !isRedirectStatus(res.status)) {
+        throw new Error(tErr('webhookStatus', { status: String(res.status) }))
+      }
       return `webhook ${res.status}`
     }
 
@@ -949,6 +960,11 @@ async function resolveConversationId(args: ExecuteArgs): Promise<string> {
     )
   }
   return data.id as string
+}
+
+/** 3xx — see the send_webhook step for why these count as delivered. */
+export function isRedirectStatus(status: number): boolean {
+  return status >= 300 && status < 400
 }
 
 /** Letter, digit or underscore in any script — the "inside a word" test. */
@@ -1086,13 +1102,61 @@ function waitMs(cfg: WaitStepConfig): number {
   return Math.max(1_000, cfg.amount * unitMs)
 }
 
-function interpolate(s: string, args: ExecuteArgs): string {
+function interpolate(
+  s: string,
+  args: ExecuteArgs,
+  contactVars: Record<string, string> = {},
+): string {
   return s.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => {
     const [ns, prop] = String(key).split('.')
     if (ns === 'message' && prop === 'text') return String(args.context.message_text ?? '')
     if (ns === 'vars' && prop) return String(args.context.vars?.[prop] ?? '')
+    if (ns === 'contact' && prop) {
+      // Values land inside a JSON body template, so escape them the way
+      // JSON.stringify would (minus the surrounding quotes).
+      const v = contactVars[prop.toLowerCase()] ?? ''
+      return JSON.stringify(v).slice(1, -1)
+    }
     return ''
   })
+}
+
+/**
+ * Contact data for {{contact.*}} placeholders: name, phone, email,
+ * company, plus every custom field by its (normalised) name. Scoped to
+ * the automation's account like every other service-role read here.
+ */
+async function loadContactVars(args: ExecuteArgs): Promise<Record<string, string>> {
+  if (!args.contactId) return {}
+  const db = supabaseAdmin()
+  const { data: contact } = await db
+    .from('contacts')
+    .select('name, phone, email, company')
+    .eq('id', args.contactId)
+    .eq('account_id', args.automation.account_id)
+    .maybeSingle()
+  if (!contact) return {}
+  const vars: Record<string, string> = {
+    name: String(contact.name ?? ''),
+    phone: String(contact.phone ?? ''),
+    email: String(contact.email ?? ''),
+    company: String(contact.company ?? ''),
+  }
+  const { data: values } = await db
+    .from('contact_custom_values')
+    .select('value, custom_fields!inner(field_name, account_id)')
+    .eq('contact_id', args.contactId)
+    .eq('custom_fields.account_id', args.automation.account_id)
+  for (const row of (values ?? []) as unknown as {
+    value: string | null
+    custom_fields: { field_name: string } | { field_name: string }[]
+  }[]) {
+    const f = Array.isArray(row.custom_fields) ? row.custom_fields[0] : row.custom_fields
+    const key = f?.field_name ? fieldKey(f.field_name) : ''
+    // Built-ins win: a custom field named "Phone" must not mask the real number.
+    if (key && !(key in vars)) vars[key] = String(row.value ?? '')
+  }
+  return vars
 }
 
 async function appendResults(

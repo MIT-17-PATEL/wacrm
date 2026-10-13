@@ -547,3 +547,39 @@ describe("reachableFromEntry", () => {
     expect(set).toEqual(new Set(["a", "b"]));
   });
 });
+
+describe("validateFlowForActivation — end node answers URL", () => {
+  const withEnd = (config: Record<string, unknown>) => [
+    { node_key: "start", node_type: "start", config: { next_node_key: "menu" } },
+    {
+      node_key: "menu",
+      node_type: "send_buttons",
+      config: {
+        text: "Pick one",
+        save_as: "choice",
+        buttons: [{ reply_id: "a", title: "A", next_node_key: "end" }],
+      },
+    },
+    { node_key: "end", node_type: "end", config },
+  ];
+
+  it("accepts an End node with no URL or an https URL", () => {
+    expect(validateFlowForActivation(validFlow, withEnd({}))).toEqual([]);
+    expect(
+      validateFlowForActivation(
+        validFlow,
+        withEnd({ webhook_url: "https://example.com/hook" }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("flags a URL that isn't http(s)", () => {
+    const issues = validateFlowForActivation(
+      validFlow,
+      withEnd({ webhook_url: "example.com/hook" }),
+    );
+    expect(issues).toEqual([
+      expect.objectContaining({ node_key: "end", field: "webhook_url" }),
+    ]);
+  });
+});

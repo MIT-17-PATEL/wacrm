@@ -48,6 +48,13 @@ export interface SendButtonsNodeConfig {
     /** node_key the runner advances to when this button is tapped. */
     next_node_key: string;
   }>;
+  /**
+   * Optional variable key. When set, the tapped button's title is stored
+   * in `flow_runs.vars[save_as]` — e.g. `bhk` → "3 BHK" — so it can be
+   * interpolated later, saved onto a matching contact field and sent by
+   * the End node's webhook.
+   */
+  save_as?: string;
 }
 
 export interface SendListNodeConfig {
@@ -66,6 +73,8 @@ export interface SendListNodeConfig {
       next_node_key: string;
     }>;
   }>;
+  /** Same as `SendButtonsNodeConfig.save_as`, for the selected row's title. */
+  save_as?: string;
 }
 
 /**
@@ -173,8 +182,17 @@ export interface SetTagNodeConfig {
   next_node_key: string;
 }
 
-// Terminal nodes carry no config — they just stop the run.
-export type EndNodeConfig = Record<string, never>;
+/**
+ * Terminal node. On reaching it the run is marked complete, and:
+ *   - every run var whose key matches a custom field name (after
+ *     `fieldKey` normalisation) is saved onto the contact, and
+ *   - when `webhook_url` is set, the answers are POSTed there as one
+ *     flat JSON object: `{ name, phone, ...vars, flow, completed_at }`.
+ *     Used to append a row to Excel via Power Automate, Make, etc.
+ */
+export interface EndNodeConfig {
+  webhook_url?: string;
+}
 
 /**
  * Total union — every concrete node_type the v1 engine understands.

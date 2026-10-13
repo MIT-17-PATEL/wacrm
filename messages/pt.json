@@ -1313,7 +1313,13 @@
         "uploadFailed": "Falha no upload.",
         "fileTooLarge": "O arquivo tem {size} MB — o limite é 16 MB.",
         "defaultOptionTitle": "Opção",
-        "optionN": "Opção {n}"
+        "optionN": "Opção {n}",
+        "saveAnswerAsLabel": "Salvar resposta como (opcional)",
+        "saveAnswerAsPlaceholder": "ex.: bhk, orcamento",
+        "saveAnswerAsHelp": "Guarda o título da opção escolhida como variável. Se um campo do contato tiver o mesmo nome, a resposta também é salva no contato.",
+        "endWebhookLabel": "Enviar respostas para URL (opcional)",
+        "endWebhookPlaceholder": "https://…",
+        "endWebhookHelp": "Quando um cliente chega a este nó, nome, telefone e respostas salvas são enviados para cá em JSON — por exemplo, um webhook do Power Automate ou Make que adiciona uma linha ao Excel."
       },
       "categories": {
         "messaging": "Mensagens",
@@ -2428,7 +2434,8 @@
       "setTagNeedsTag": "O nó Marcar contato precisa de uma tag para aplicar.",
       "setTagNeedsNext": "O nó Marcar contato precisa apontar para um próximo nó.",
       "setTagMissingNext": "O nó Marcar contato aponta para um nó inexistente: \"{key}\".",
-      "unknownNodeType": "Tipo de nó desconhecido: \"{type}\"."
+      "unknownNodeType": "Tipo de nó desconhecido: \"{type}\".",
+      "endWebhookInvalid": "A URL de respostas deve começar com http:// ou https://."
     },
     "automations": {
       "needsStep": "automações ativas precisam de pelo menos uma etapa",

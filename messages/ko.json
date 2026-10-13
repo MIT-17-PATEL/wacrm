@@ -1313,7 +1313,13 @@
         "uploadFailed": "업로드에 실패했습니다.",
         "fileTooLarge": "파일이 {size}MB입니다 — 제한은 16MB입니다.",
         "defaultOptionTitle": "옵션",
-        "optionN": "옵션 {n}"
+        "optionN": "옵션 {n}",
+        "saveAnswerAsLabel": "답변 저장 변수 (선택)",
+        "saveAnswerAsPlaceholder": "예: bhk, budget",
+        "saveAnswerAsHelp": "선택한 옵션의 제목을 변수로 저장합니다. 같은 이름의 연락처 필드가 있으면 연락처에도 저장됩니다.",
+        "endWebhookLabel": "답변을 보낼 URL (선택)",
+        "endWebhookPlaceholder": "https://…",
+        "endWebhookHelp": "고객이 이 노드에 도달하면 이름, 전화번호, 저장된 답변이 JSON으로 이 주소에 전송됩니다. 예: Excel에 행을 추가하는 Power Automate 또는 Make 웹훅."
       },
       "categories": {
         "messaging": "메시징",
@@ -2428,7 +2434,8 @@
       "setTagNeedsTag": "연락처 태그 지정에는 적용할 태그가 필요합니다.",
       "setTagNeedsNext": "연락처 태그 지정 노드는 다음 노드를 가리켜야 합니다.",
       "setTagMissingNext": "연락처 태그 지정 노드가 존재하지 않는 노드 \"{key}\"을(를) 가리킵니다.",
-      "unknownNodeType": "알 수 없는 노드 유형 \"{type}\"."
+      "unknownNodeType": "알 수 없는 노드 유형 \"{type}\".",
+      "endWebhookInvalid": "답변 URL은 http:// 또는 https://로 시작해야 합니다."
     },
     "automations": {
       "needsStep": "활성 자동화에는 단계가 하나 이상 필요합니다",

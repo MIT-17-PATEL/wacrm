@@ -40,6 +40,7 @@ import {
   engineSendText,
 } from "./meta-send";
 import { decideFallback, resolveFallbackPolicy } from "./fallback";
+import { exportCompletedRun, replyTitleFor, saveAsKeyFor } from "./export";
 import { addContactTagAndDispatch } from "@/lib/contacts/tag-events";
 import { removeContactTag } from "@/lib/contacts/tag-write";
 import {
@@ -47,6 +48,7 @@ import {
   type ConditionNodeConfig,
   type DispatchInboundInput,
   type DispatchInboundResult,
+  type EndNodeConfig,
   type FlowNodeRow,
   type FlowRow,
   type FlowRunRow,
@@ -860,7 +862,24 @@ async function advanceFromNodeKey(
       return { outcome: "handed_off" };
     }
     if (node.node_type === "end") {
-      await logEvent(db, run.id, "completed", node.node_key);
+      // Export before closing the run: answers onto matching contact
+      // fields, plus the optional webhook. Never throws; a failure is
+      // logged and the run still completes.
+      const exported = await exportCompletedRun(
+        db,
+        run,
+        node.config as unknown as EndNodeConfig,
+      );
+      for (const detail of exported.errors) {
+        await logEvent(db, run.id, "error", node.node_key, {
+          reason: "export_failed",
+          detail,
+        });
+      }
+      await logEvent(db, run.id, "completed", node.node_key, {
+        saved_fields: exported.saved_fields,
+        webhook_status: exported.webhook_status,
+      });
       await endRun(db, run.id, "completed", "end_node");
       return { outcome: "completed" };
     }
@@ -1022,6 +1041,32 @@ async function handleReplyForActiveRun(
       currentNode.node_type === "send_list")
   ) {
     matched = matchReplyId(currentNode, message.reply_id);
+    // "Save answer as": keep the tapped option's title in run vars so
+    // it can be interpolated later and exported by the End node.
+    const saveAs = matched ? saveAsKeyFor(currentNode) : "";
+    if (saveAs) {
+      const answer =
+        replyTitleFor(currentNode, message.reply_id) ?? message.reply_title;
+      const newVars = { ...run.vars, [saveAs]: answer };
+      const { error: saveErr } = await db
+        .from("flow_runs")
+        .update({ vars: newVars })
+        .eq("id", run.id);
+      if (saveErr) {
+        // Non-fatal: the customer still moves on; the answer is just
+        // missing from the export.
+        await logEvent(db, run.id, "error", currentNode.node_key, {
+          reason: "save_answer_failed",
+          detail: saveErr.message,
+        });
+      } else {
+        run.vars = newVars;
+        await logEvent(db, run.id, "node_entered", currentNode.node_key, {
+          captured_key: saveAs,
+          captured_length: answer.length,
+        });
+      }
+    }
   } else if (
     message.kind === "text" &&
     currentNode.node_type === "collect_input"

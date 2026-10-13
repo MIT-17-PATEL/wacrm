@@ -98,26 +98,40 @@ export function NodeConfigForm({
 
     case "send_buttons":
       return (
-        <SendButtonsForm
-          cfg={cfg as SendButtonsCfg}
-          allNodes={allNodes}
-          currentKey={node.node_key}
-          onUpdateConfig={onUpdateConfig}
-          showAdvanced={showAdvanced}
-          t={t}
-        />
+        <>
+          <SendButtonsForm
+            cfg={cfg as SendButtonsCfg}
+            allNodes={allNodes}
+            currentKey={node.node_key}
+            onUpdateConfig={onUpdateConfig}
+            showAdvanced={showAdvanced}
+            t={t}
+          />
+          <SaveAnswerAsRow
+            value={(cfg as { save_as?: string }).save_as ?? ""}
+            onChange={(v) => onUpdateConfig({ save_as: v })}
+            t={t}
+          />
+        </>
       );
 
     case "send_list":
       return (
-        <SendListForm
-          cfg={cfg as SendListCfg}
-          allNodes={allNodes}
-          currentKey={node.node_key}
-          onUpdateConfig={onUpdateConfig}
-          showAdvanced={showAdvanced}
-          t={t}
-        />
+        <>
+          <SendListForm
+            cfg={cfg as SendListCfg}
+            allNodes={allNodes}
+            currentKey={node.node_key}
+            onUpdateConfig={onUpdateConfig}
+            showAdvanced={showAdvanced}
+            t={t}
+          />
+          <SaveAnswerAsRow
+            value={(cfg as { save_as?: string }).save_as ?? ""}
+            onChange={(v) => onUpdateConfig({ save_as: v })}
+            t={t}
+          />
+        </>
       );
 
     case "send_media":
@@ -208,11 +222,59 @@ export function NodeConfigForm({
 
     case "end":
       return (
-        <p className="text-xs text-muted-foreground">
-          {t("endNodeHelp")}
-        </p>
+        <>
+          <p className="text-xs text-muted-foreground">
+            {t("endNodeHelp")}
+          </p>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">
+              {t("endWebhookLabel")}
+            </label>
+            <Input
+              type="url"
+              value={(cfg as { webhook_url?: string }).webhook_url ?? ""}
+              onChange={(e) => onUpdateConfig({ webhook_url: e.target.value.trim() })}
+              placeholder={t("endWebhookPlaceholder")}
+              className="bg-muted font-mono text-xs"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              {t("endWebhookHelp")}
+            </p>
+          </div>
+        </>
       );
   }
+}
+
+// ============================================================
+// "Save answer as" — shared by send_buttons and send_list
+// ============================================================
+
+function SaveAnswerAsRow({
+  value,
+  onChange,
+  t,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs text-muted-foreground">
+        {t("saveAnswerAsLabel")}
+      </label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+        placeholder={t("saveAnswerAsPlaceholder")}
+        className="bg-muted font-mono text-xs"
+      />
+      <p className="mt-1 text-[10px] text-muted-foreground">
+        {t("saveAnswerAsHelp")}
+      </p>
+    </div>
+  );
 }
 
 // ============================================================

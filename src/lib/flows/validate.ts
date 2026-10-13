@@ -28,6 +28,15 @@ import { getT } from "@/lib/i18n/translate";
 
 const t = getT("Validation.flows");
 
+function isHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 export interface ValidationIssue {
   severity: "error" | "warning";
   scope: "flow" | "trigger" | "node";
@@ -716,10 +725,21 @@ function validateNode(
     }
 
     case "handoff":
-    case "end":
-      // Terminal nodes have no outgoing edges; nothing to validate
-      // beyond their existence.
+    case "end": {
+      // Terminal nodes have no outgoing edges. The only config is the
+      // optional answers webhook, which must be an absolute http(s) URL.
+      const url = (node.config as { webhook_url?: unknown }).webhook_url;
+      if (typeof url === "string" && url.trim() && !isHttpUrl(url.trim())) {
+        issues.push({
+          severity: "error",
+          scope: "node",
+          node_key: node.node_key,
+          field: "webhook_url",
+          message: t("endWebhookInvalid"),
+        });
+      }
       break;
+    }
 
     default:
       issues.push({

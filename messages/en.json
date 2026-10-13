@@ -1259,7 +1259,7 @@
         "varKeyHelp": "Interpolate in downstream prompts and handoff notes with",
         "advanceAfterCapture": "After capturing, advance to",
         "internalNote": "Internal note (for the agent picking up)",
-        "endNodeHelp": "Terminal node. When the runner reaches this node the run is marked complete. No config needed.",
+        "endNodeHelp": "Terminal node. When the runner reaches this node the run is marked complete, and answers saved as variables are written onto contact fields with the same name.",
         "bodyText": "Body text",
         "footerText": "Footer (optional, 60 chars)",
         "buttonsHelp": "Buttons (1–3) — each one routes to a different next node",
@@ -1313,7 +1313,13 @@
         "uploadFailed": "Upload failed.",
         "fileTooLarge": "File is {size} MB — limit is 16 MB.",
         "defaultOptionTitle": "Option",
-        "optionN": "Option {n}"
+        "optionN": "Option {n}",
+        "saveAnswerAsLabel": "Save answer as (optional)",
+        "saveAnswerAsPlaceholder": "e.g. bhk, budget",
+        "saveAnswerAsHelp": "Stores the tapped option's title as a variable. If a contact field has the same name, the answer is saved on the contact too.",
+        "endWebhookLabel": "Send answers to URL (optional)",
+        "endWebhookPlaceholder": "https://…",
+        "endWebhookHelp": "When a customer reaches this node, their name, phone and saved answers are sent here as JSON — for example a Power Automate or Make webhook that adds a row to Excel."
       },
       "categories": {
         "messaging": "Messaging",
@@ -2428,7 +2434,8 @@
       "setTagNeedsTag": "Set-tag needs a tag to apply.",
       "setTagNeedsNext": "Set-tag must point to a next node.",
       "setTagMissingNext": "Set-tag points to non-existent node \"{key}\".",
-      "unknownNodeType": "Unknown node type \"{type}\"."
+      "unknownNodeType": "Unknown node type \"{type}\".",
+      "endWebhookInvalid": "The answers URL must start with http:// or https://."
     },
     "automations": {
       "needsStep": "active automations need at least one step",
