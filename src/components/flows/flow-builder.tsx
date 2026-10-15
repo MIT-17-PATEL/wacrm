@@ -272,6 +272,14 @@ function TriggerPanel({
   triggerIssues: ValidationIssue[];
   t: ReturnType<typeof useTranslations>;
 }) {
+  // "A message equals" is not its own trigger_type: it is the keyword
+  // trigger with `match_type: 'exact'`, surfaced as a separate choice.
+  const pickerValue =
+    state.trigger_type === 'keyword' &&
+    state.trigger_config.match_type === 'exact'
+      ? 'keyword_exact'
+      : state.trigger_type;
+
   return (
     <section className="border-border bg-card rounded-lg border p-4">
       <h2 className="text-foreground mb-3 text-sm font-semibold">{t('triggerTitle')}</h2>
@@ -281,14 +289,29 @@ function TriggerPanel({
             {t('whenLabel')}
           </label>
           <Select
-            value={state.trigger_type}
+            value={pickerValue}
             onValueChange={(v) =>
-              setState((s) => ({
-                ...s,
-                trigger_type: v as BuilderState['trigger_type'],
-                trigger_config:
-                  v === 'keyword' ? { keywords: [] } : v === 'manual' ? {} : {},
-              }))
+              setState((s) => {
+                if (v === 'keyword' || v === 'keyword_exact') {
+                  // Switching between contains / equals keeps the keywords.
+                  const keywords = Array.isArray(s.trigger_config.keywords)
+                    ? s.trigger_config.keywords
+                    : [];
+                  return {
+                    ...s,
+                    trigger_type: 'keyword',
+                    trigger_config: {
+                      keywords,
+                      match_type: v === 'keyword_exact' ? 'exact' : 'contains',
+                    },
+                  };
+                }
+                return {
+                  ...s,
+                  trigger_type: v as BuilderState['trigger_type'],
+                  trigger_config: {},
+                };
+              })
             }
           >
             <SelectTrigger className="bg-muted">
@@ -297,6 +320,9 @@ function TriggerPanel({
             <SelectContent>
               <SelectItem value="keyword">
                 {t('triggerKeywordTitle')}
+              </SelectItem>
+              <SelectItem value="keyword_exact">
+                {t('triggerKeywordExactTitle')}
               </SelectItem>
               <SelectItem value="first_inbound_message">
                 {t('triggerFirstInboundTitle')}
@@ -329,6 +355,11 @@ function TriggerPanel({
           </div>
         )}
       </div>
+      {state.trigger_type !== 'manual' && (
+        <p className="text-muted-foreground mt-3 text-xs">
+          {t('triggerTextHint')}
+        </p>
+      )}
       {triggerIssues.length > 0 && (
         <div className="mt-3 flex flex-col gap-1">
           {triggerIssues.map((i, ix) => (

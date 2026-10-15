@@ -755,6 +755,11 @@ function ConditionForm({
               className="bg-muted font-mono text-xs"
             />
           )}
+          {subject === "var" && (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {t("conditionVarHint")}
+            </p>
+          )}
         </div>
       </div>
 

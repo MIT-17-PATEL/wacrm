@@ -16,6 +16,7 @@ import { reopenClosedConversation } from '@/lib/conversations/reopen'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
 import { resumeAwaitingReply, runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
+import { extractInboundText } from '@/lib/whatsapp/inbound-text'
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply'
 import { dispatchWebhookEvent } from '@/lib/webhooks/deliver'
 import {
@@ -876,6 +877,11 @@ async function processMessage(
   // no active flows take the runner's early-exit "no_match" path
   // basically for free (one indexed SELECT for the active run).
   // ============================================================
+  // The customer's words, typed or tapped (template quick-reply button
+  // label, interactive button / list title). Media captions and other
+  // types carry no reply text, so fall back to the parsed content.
+  const inboundText = extractInboundText(message).text ?? contentText ?? ''
+
   const flowResult = await dispatchInboundToFlows({
     accountId,
     userId: configOwnerUserId,
@@ -886,12 +892,12 @@ async function processMessage(
         ? {
             kind: 'interactive_reply',
             reply_id: interactiveReplyId,
-            reply_title: contentText ?? '',
+            reply_title: inboundText,
             meta_message_id: message.id,
           }
         : {
             kind: 'text',
-            text: contentText ?? message.text?.body ?? '',
+            text: inboundText,
             meta_message_id: message.id,
           },
     isFirstInboundMessage,
@@ -903,7 +909,6 @@ async function processMessage(
   // message all exist before any step — including send_message — runs.
   // Fire-and-forget: a slow or failing automation must not block the
   // webhook's 200 OK response to Meta.
-  const inboundText = contentText ?? message.text?.body ?? ''
 
   // An automation parked at a "wait for reply" Send Buttons / Send List
   // step takes this message as its reply — a tap or typed text — and
@@ -1086,9 +1091,14 @@ async function parseMessageContent(
     interactiveReplyId: null,
   }
 
+  // Typed text, template quick-reply taps and interactive taps all read
+  // their visible text / stable payload through the one shared helper,
+  // so the inbox, Flows and automations see the same words.
+  const inbound = extractInboundText(message)
+
   switch (message.type) {
     case 'text':
-      return { ...empty, contentText: message.text?.body || null }
+      return { ...empty, contentText: inbound.text }
 
     case 'image':
       if (message.image?.id) {
@@ -1173,13 +1183,11 @@ async function parseMessageContent(
       // Use the human-readable title as contentText so the inbox bubble
       // renders the tap legibly ("Existing customer"), and stash the
       // stable id separately so the Flows engine can route on it.
-      const reply =
-        message.interactive?.button_reply ?? message.interactive?.list_reply
-      if (reply?.id) {
+      if (inbound.payload) {
         return {
           ...empty,
-          contentText: reply.title || reply.id,
-          interactiveReplyId: reply.id,
+          contentText: inbound.text || inbound.payload,
+          interactiveReplyId: inbound.payload,
         }
       }
       return { ...empty, contentText: '[Interactive reply]' }
@@ -1198,12 +1206,10 @@ async function parseMessageContent(
       // `button_reply.id`); `text` is the visible label. Prefer the
       // payload for routing and the label for display, each falling
       // back to the other since a template may carry only one.
-      const payload = message.button?.payload || null
-      const label = message.button?.text || null
       return {
         ...empty,
-        contentText: label || payload,
-        interactiveReplyId: payload || label,
+        contentText: inbound.text || inbound.payload,
+        interactiveReplyId: inbound.payload || inbound.text,
       }
     }
 

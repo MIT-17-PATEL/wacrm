@@ -221,9 +221,15 @@ export type FlowNodeType = FlowNodeConfig["node_type"];
 // ============================================================
 
 export interface KeywordTriggerConfig {
-  /** One or more keywords. Match is case-insensitive by default. */
+  /** One or more keywords. Both sides are trimmed; case is ignored. */
   keywords: string[];
+  /**
+   * `exact` = builder's "A message equals"; `contains` (the default) =
+   * "A message contains". No DB change: both live under
+   * `trigger_type: 'keyword'`.
+   */
   match_type?: "exact" | "contains";
+  /** Legacy, config-only (the builder never sets it): keep case. */
   case_sensitive?: boolean;
 }
 

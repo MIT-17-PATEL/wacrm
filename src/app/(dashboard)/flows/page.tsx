@@ -48,7 +48,9 @@ interface FlowRow {
   description: string | null;
   status: "draft" | "active" | "archived";
   trigger_type: "keyword" | "first_inbound_message" | "manual";
-  trigger_config: { keywords?: string[] } | Record<string, unknown>;
+  trigger_config:
+    | { keywords?: string[]; match_type?: "exact" | "contains" }
+    | Record<string, unknown>;
   execution_count: number;
   last_executed_at: string | null;
   created_at: string;
@@ -433,7 +435,12 @@ function describeTrigger(flow: FlowRow, t: ReturnType<typeof useTranslations>): 
       ? (flow.trigger_config.keywords as string[])
       : [];
     if (keywords.length === 0) return t("triggerKeywordNone");
-    return t("triggerKeyword", { keywords: keywords.join(", ") });
+    return t(
+      flow.trigger_config.match_type === "exact"
+        ? "triggerKeywordExact"
+        : "triggerKeyword",
+      { keywords: keywords.join(", ") },
+    );
   }
   if (flow.trigger_type === "first_inbound_message") {
     return t("triggerFirstInbound");

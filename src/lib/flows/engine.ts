@@ -43,6 +43,7 @@ import { decideFallback, resolveFallbackPolicy } from "./fallback";
 import { exportCompletedRun, replyTitleFor, saveAsKeyFor } from "./export";
 import { addContactTagAndDispatch } from "@/lib/contacts/tag-events";
 import { removeContactTag } from "@/lib/contacts/tag-write";
+import { normalizeForMatch } from "@/lib/whatsapp/inbound-text";
 import {
   type CollectInputNodeConfig,
   type ConditionNodeConfig,
@@ -92,25 +93,125 @@ export function matchReplyId(
 }
 
 /**
- * Case-insensitive contains/exact match against a list of keywords.
- * Used by the trigger evaluator. Stable enough that the v3 builder
- * UI can preview matches by passing canned strings.
+ * Fallback for `matchReplyId`: the reply_id of the button / list row
+ * whose visible title equals `text` (trimmed, case-insensitive), or
+ * `null`. Lets a customer who TYPES "interested" — or taps a template
+ * quick-reply whose payload isn't one of our reply_ids — take the same
+ * branch as tapping the "Interested" button.
  */
+export function matchReplyTitle(
+  node: { node_type: string; config: Record<string, unknown> },
+  text: string,
+): string | null {
+  const wanted = normalizeForMatch(text);
+  if (!wanted) return null;
+  if (node.node_type === "send_buttons") {
+    const cfg = node.config as unknown as SendButtonsNodeConfig;
+    const hit = cfg.buttons?.find(
+      (b) => b.title && normalizeForMatch(b.title) === wanted,
+    );
+    return hit?.reply_id ?? null;
+  }
+  if (node.node_type === "send_list") {
+    const cfg = node.config as unknown as SendListNodeConfig;
+    for (const section of cfg.sections ?? []) {
+      const hit = section.rows?.find(
+        (r) => r.title && normalizeForMatch(r.title) === wanted,
+      );
+      if (hit) return hit.reply_id;
+    }
+  }
+  return null;
+}
+
+/**
+ * How a message matched a keyword trigger: `exact` when a keyword equals
+ * the whole message, otherwise a substring hit. `keyword_length` is the
+ * longest matching keyword. Used to pick ONE flow when several match.
+ */
+export interface KeywordTriggerMatch {
+  exact: boolean;
+  keyword_length: number;
+}
+
+/**
+ * Match a message against a keyword trigger, or `null` for no match.
+ *
+ * Both sides are trimmed and compared case-insensitively ("A message
+ * equals" → `match_type: 'exact'`, "A message contains" → `'contains'`,
+ * the default). `case_sensitive: true` is a legacy config-only knob the
+ * builder never sets; it keeps case but still trims.
+ */
+export function keywordTriggerMatch(
+  text: string,
+  cfg: KeywordTriggerConfig,
+): KeywordTriggerMatch | null {
+  if (!text || !cfg.keywords?.length) return null;
+  const norm = (s: string) =>
+    cfg.case_sensitive ? s.trim() : normalizeForMatch(s);
+  const haystack = norm(text);
+  if (!haystack) return null;
+  const matchType = cfg.match_type ?? "contains";
+  let best: KeywordTriggerMatch | null = null;
+  for (const raw of cfg.keywords) {
+    const needle = raw ? norm(raw) : "";
+    if (!needle) continue;
+    const exact = haystack === needle;
+    if (matchType === "exact" ? !exact : !haystack.includes(needle)) continue;
+    const hit = { exact, keyword_length: needle.length };
+    if (!best || compareKeywordMatches(hit, best) < 0) best = hit;
+  }
+  return best;
+}
+
+/** Boolean form of `keywordTriggerMatch`. */
 export function matchesKeywordTrigger(
   text: string,
   cfg: KeywordTriggerConfig,
 ): boolean {
-  if (!text || !cfg.keywords?.length) return false;
-  const matchType = cfg.match_type ?? "contains";
-  const haystack = cfg.case_sensitive ? text : text.toLowerCase();
-  for (const raw of cfg.keywords) {
-    if (!raw) continue;
-    const needle = cfg.case_sensitive ? raw : raw.toLowerCase();
-    if (matchType === "exact" ? haystack === needle : haystack.includes(needle)) {
-      return true;
-    }
+  return keywordTriggerMatch(text, cfg) !== null;
+}
+
+/**
+ * Sort order for competing keyword matches — negative when `a` should
+ * win: exact (whole-message) matches beat substring hits, then the
+ * longer keyword wins, so "Not Interested" beats "Interested" for the
+ * message "Not Interested".
+ */
+export function compareKeywordMatches(
+  a: KeywordTriggerMatch,
+  b: KeywordTriggerMatch,
+): number {
+  if (a.exact !== b.exact) return a.exact ? -1 : 1;
+  return b.keyword_length - a.keyword_length;
+}
+
+/**
+ * The customer's words for any inbound shape: the typed text, or the
+ * visible title of the tapped button / list row / template quick-reply
+ * (falling back to its id when Meta sent no title).
+ */
+export function inboundTextOf(message: ParsedInbound): string {
+  if (message.kind === "text") return message.text;
+  return message.reply_title || message.reply_id;
+}
+
+/**
+ * Vars a new run starts with, so the message that triggered the flow
+ * can be branched on by an If/else (`Captured variable` → `trigger_text`)
+ * and interpolated as `{{vars.trigger_text}}`. `trigger_payload` is the
+ * stable id behind a tap (template button payload / reply id).
+ */
+export function triggerVarsFor(
+  message: ParsedInbound,
+): Record<string, string> {
+  const vars: Record<string, string> = {};
+  const text = inboundTextOf(message).trim();
+  if (text) vars.trigger_text = text;
+  if (message.kind === "interactive_reply" && message.reply_id) {
+    vars.trigger_payload = message.reply_id;
   }
-  return false;
+  return vars;
 }
 
 /**
@@ -181,12 +282,19 @@ export function evaluateConditionPredicate(args: {
       return args.subjectValue !== undefined && args.subjectValue !== "";
     case "absent":
       return args.subjectValue === undefined || args.subjectValue === "";
+    // equals / contains ignore surrounding whitespace and letter case, so
+    // a typed " interested" and a tapped "Interested" compare alike.
     case "equals":
       if (args.subjectValue === undefined) return false;
-      return args.subjectValue === (args.configValue ?? "");
+      return (
+        normalizeForMatch(args.subjectValue) ===
+        normalizeForMatch(args.configValue ?? "")
+      );
     case "contains":
       if (args.subjectValue === undefined) return false;
-      return args.subjectValue.includes(args.configValue ?? "");
+      return normalizeForMatch(args.subjectValue).includes(
+        normalizeForMatch(args.configValue ?? ""),
+      );
   }
 }
 
@@ -361,25 +469,54 @@ async function findEntryFlow(
     .order("created_at", { ascending: true });
   if (error || !flows) return null;
 
-  const typed = flows as FlowRow[];
-  for (const flow of typed) {
+  return pickEntryFlow(flows as FlowRow[], candidates, isFirstInbound);
+}
+
+/**
+ * Choose the ONE flow an inbound message starts, from the account's
+ * active flows (oldest first). Pure — exported for tests.
+ *
+ * Several keyword flows can match the same message ("Interested" is a
+ * substring of "Not Interested"), so they are ranked rather than taken
+ * first-come: an exact whole-message match beats a substring hit, then
+ * the longest matching keyword wins, then the oldest flow. A keyword
+ * match is more specific than "first ever message", so it wins over a
+ * `first_inbound_message` flow; that one only starts when no keyword
+ * flow matched.
+ */
+export function pickEntryFlow(
+  flows: FlowRow[],
+  candidates: string[],
+  isFirstInbound: boolean,
+): FlowRow | null {
+  let best: { flow: FlowRow; match: KeywordTriggerMatch } | null = null;
+  let firstInboundFlow: FlowRow | null = null;
+  for (const flow of flows) {
     if (flow.trigger_type === "keyword") {
       const cfg = flow.trigger_config as KeywordTriggerConfig;
-      if (candidates.some((text) => matchesKeywordTrigger(text, cfg))) {
-        return flow;
+      for (const text of candidates) {
+        const match = keywordTriggerMatch(text, cfg);
+        // Strictly better only — ties keep the older flow.
+        if (match && (!best || compareKeywordMatches(match, best.match) < 0)) {
+          best = { flow, match };
+        }
       }
-    } else if (flow.trigger_type === "first_inbound_message" && isFirstInbound) {
+    } else if (
+      flow.trigger_type === "first_inbound_message" &&
+      isFirstInbound &&
+      !firstInboundFlow
+    ) {
       // Also reachable by a tap now: a broadcast template with a
       // quick-reply button can genuinely be what prompts a contact's
       // first-ever inbound. The automations dispatcher has always
       // treated a tap that way (the webhook pushes
       // `first_inbound_message` regardless of envelope) — flows were
       // the inconsistent half.
-      return flow;
+      firstInboundFlow = flow;
     }
     // 'manual' triggers do not auto-start from inbound messages.
   }
-  return null;
+  return best?.flow ?? firstInboundFlow;
 }
 
 // ============================================================
@@ -1030,23 +1167,31 @@ async function handleReplyForActiveRun(
   }
 
   // Two ways a reply can advance:
-  //   1. Interactive button/list tap on a send_buttons/send_list node.
-  //   2. Text reply on a collect_input node — capture into vars.
+  //   1. A reply on a send_buttons/send_list node — a tap matched by its
+  //      reply_id, or (typed text / a template tap whose payload isn't
+  //      one of our ids) matched by the option's visible title.
+  //   2. Any reply on a collect_input node — capture its text into vars.
+  //      A tap counts too: its label is what the customer "said".
   //
   // Everything else falls through to the fallback policy below.
+  const replyText = inboundTextOf(message);
   let matched: string | null = null;
   if (
-    message.kind === "interactive_reply" &&
-    (currentNode.node_type === "send_buttons" ||
-      currentNode.node_type === "send_list")
+    currentNode.node_type === "send_buttons" ||
+    currentNode.node_type === "send_list"
   ) {
-    matched = matchReplyId(currentNode, message.reply_id);
+    const tappedId =
+      message.kind === "interactive_reply" &&
+      matchReplyId(currentNode, message.reply_id) !== null
+        ? message.reply_id
+        : null;
+    const replyId = tappedId ?? matchReplyTitle(currentNode, replyText);
+    matched = replyId ? matchReplyId(currentNode, replyId) : null;
     // "Save answer as": keep the tapped option's title in run vars so
     // it can be interpolated later and exported by the End node.
     const saveAs = matched ? saveAsKeyFor(currentNode) : "";
-    if (saveAs) {
-      const answer =
-        replyTitleFor(currentNode, message.reply_id) ?? message.reply_title;
+    if (replyId && saveAs) {
+      const answer = replyTitleFor(currentNode, replyId) ?? replyText;
       const newVars = { ...run.vars, [saveAs]: answer };
       const { error: saveErr } = await db
         .from("flow_runs")
@@ -1067,12 +1212,9 @@ async function handleReplyForActiveRun(
         });
       }
     }
-  } else if (
-    message.kind === "text" &&
-    currentNode.node_type === "collect_input"
-  ) {
+  } else if (currentNode.node_type === "collect_input") {
     const cfg = currentNode.config as unknown as CollectInputNodeConfig;
-    const captured = message.text.trim();
+    const captured = replyText.trim();
     if (captured.length > 0 && cfg.var_key) {
       // Persist captured value + reset reprompt count atomically.
       const newVars = { ...run.vars, [cfg.var_key]: captured };
@@ -1214,6 +1356,8 @@ async function startNewRun(
       conversation_id: input.conversationId,
       status: "active",
       current_node_key: flow.entry_node_id,
+      // The triggering message, for If/else branching and the Runs view.
+      vars: triggerVarsFor(input.message),
     })
     .select("*")
     .maybeSingle();

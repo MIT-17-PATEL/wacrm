@@ -89,6 +89,10 @@ import {
   dispatchInboundToFlows,
   matchReplyId,
   matchesKeywordTrigger,
+  keywordTriggerMatch,
+  matchReplyTitle,
+  pickEntryFlow,
+  triggerVarsFor,
   isAutoAdvancing,
   isSuspending,
   isTerminal,
@@ -98,7 +102,7 @@ import type {
   engineSendInteractiveButtons,
   engineSendInteractiveList,
 } from "./meta-send";
-import type { ParsedInbound } from "./types";
+import type { FlowRow, ParsedInbound } from "./types";
 
 describe("matchReplyId", () => {
   it("returns null for nodes without options", () => {
@@ -233,6 +237,114 @@ describe("matchesKeywordTrigger", () => {
     expect(matchesKeywordTrigger("support center", cfg)).toBe(true);
     expect(matchesKeywordTrigger("nope", cfg)).toBe(false);
   });
+
+  it("match_type='exact' trims both sides", () => {
+    const cfg = { keywords: [" Interested "], match_type: "exact" as const };
+    expect(matchesKeywordTrigger("  interested\n", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("Not Interested", cfg)).toBe(false);
+  });
+
+  it("whitespace-only text or keywords never match", () => {
+    expect(matchesKeywordTrigger("   ", { keywords: ["hi"] })).toBe(false);
+    expect(matchesKeywordTrigger("hi", { keywords: ["   "] })).toBe(false);
+  });
+});
+
+describe("keywordTriggerMatch", () => {
+  it("reports an exact whole-message hit and the longest keyword", () => {
+    const cfg = { keywords: ["interested", "not interested"] };
+    expect(keywordTriggerMatch("Not Interested", cfg)).toEqual({
+      exact: true,
+      keyword_length: "not interested".length,
+    });
+    expect(keywordTriggerMatch("I'm interested!", cfg)).toEqual({
+      exact: false,
+      keyword_length: "interested".length,
+    });
+  });
+});
+
+describe("pickEntryFlow", () => {
+  const flow = (
+    id: string,
+    trigger_config: Record<string, unknown>,
+    trigger_type: FlowRow["trigger_type"] = "keyword",
+  ) => ({ id, trigger_type, trigger_config }) as unknown as FlowRow;
+
+  it("prefers an exact match over an older 'contains' match", () => {
+    const contains = flow("contains", { keywords: ["interested"] });
+    const equals = flow("equals", {
+      keywords: ["Not Interested"],
+      match_type: "exact",
+    });
+    expect(pickEntryFlow([contains, equals], ["Not Interested"], false)?.id).toBe(
+      "equals",
+    );
+  });
+
+  it("among substring hits, the longest keyword wins", () => {
+    const short = flow("short", { keywords: ["interested"] });
+    const long = flow("long", { keywords: ["not interested"] });
+    expect(
+      pickEntryFlow([short, long], ["sorry, not interested now"], false)?.id,
+    ).toBe("long");
+  });
+
+  it("ties keep the oldest flow (input order)", () => {
+    const a = flow("a", { keywords: ["hi"] });
+    const b = flow("b", { keywords: ["hi"] });
+    expect(pickEntryFlow([a, b], ["hi"], false)?.id).toBe("a");
+  });
+
+  it("a keyword match beats a first_inbound_message flow", () => {
+    const first = flow("first", {}, "first_inbound_message");
+    const kw = flow("kw", { keywords: ["interested"] });
+    expect(pickEntryFlow([first, kw], ["Interested"], true)?.id).toBe("kw");
+    expect(pickEntryFlow([first, kw], ["hello"], true)?.id).toBe("first");
+    expect(pickEntryFlow([first, kw], ["hello"], false)).toBeNull();
+  });
+});
+
+describe("matchReplyTitle", () => {
+  const node = {
+    node_type: "send_buttons",
+    config: {
+      text: "Pick",
+      buttons: [
+        { reply_id: "yes", title: "Interested", next_node_key: "a" },
+        { reply_id: "no", title: "Not Interested", next_node_key: "b" },
+      ],
+    },
+  };
+
+  it("matches a button by visible title, ignoring case and spaces", () => {
+    expect(matchReplyTitle(node, " interested ")).toBe("yes");
+    expect(matchReplyTitle(node, "NOT INTERESTED")).toBe("no");
+  });
+
+  it("does not substring-match", () => {
+    expect(matchReplyTitle(node, "interested in more")).toBeNull();
+    expect(matchReplyTitle(node, "")).toBeNull();
+  });
+});
+
+describe("triggerVarsFor", () => {
+  it("stores typed text as trigger_text with no payload", () => {
+    expect(
+      triggerVarsFor({ kind: "text", text: " interested ", meta_message_id: "m" }),
+    ).toEqual({ trigger_text: "interested" });
+  });
+
+  it("stores a tap's title and payload", () => {
+    expect(
+      triggerVarsFor({
+        kind: "interactive_reply",
+        reply_id: "NOT_INTERESTED",
+        reply_title: "Not Interested",
+        meta_message_id: "m",
+      }),
+    ).toEqual({ trigger_text: "Not Interested", trigger_payload: "NOT_INTERESTED" });
+  });
 });
 
 describe("node classification helpers", () => {
@@ -335,7 +447,7 @@ describe("evaluateConditionPredicate", () => {
     ).toBe(false);
   });
 
-  it("equals: exact string comparison; case-sensitive", () => {
+  it("equals: whole-string comparison ignoring case and surrounding spaces", () => {
     expect(
       evaluateConditionPredicate({
         operator: "equals",
@@ -346,10 +458,27 @@ describe("evaluateConditionPredicate", () => {
     expect(
       evaluateConditionPredicate({
         operator: "equals",
-        subjectValue: "vip",
+        subjectValue: "  vip ",
         configValue: "VIP",
       }),
+    ).toBe(true);
+    expect(
+      evaluateConditionPredicate({
+        operator: "equals",
+        subjectValue: "Not Interested",
+        configValue: "Interested",
+      }),
     ).toBe(false);
+  });
+
+  it("contains: ignores case and surrounding spaces", () => {
+    expect(
+      evaluateConditionPredicate({
+        operator: "contains",
+        subjectValue: "I am NOT interested",
+        configValue: " not interested ",
+      }),
+    ).toBe(true);
   });
 
   it("equals: undefined subject never matches (even against empty)", () => {
@@ -621,6 +750,53 @@ describe("send_buttons / send_list interpolate {{vars.*}} (#553)", () => {
           status: "failed",
           end_reason: "send_buttons_failed",
         }),
+      }),
+    );
+  });
+});
+
+// ============================================================
+// Typed text and taps are interchangeable inside an active run.
+// ============================================================
+
+describe("replies inside an active run: typed text == tapped label", () => {
+  beforeEach(() => {
+    h.state.flows = [FLOW];
+    h.state.nodes = nodesEndingIn("choose");
+    h.state.events = [];
+    h.state.updates = [];
+  });
+
+  it("typing a button's title routes like tapping it", async () => {
+    h.state.activeRuns = [
+      { ...RUN, current_node_key: "choose", vars: { name: "Alice" } },
+    ];
+
+    const result = await dispatch(text("  NO THANKS "));
+
+    // Matched "No thanks" → advanced to the End node, no reprompt.
+    expect(result).toMatchObject({ consumed: true, outcome: "completed" });
+    expect(h.sendButtons).not.toHaveBeenCalled();
+    expect(h.state.events).not.toContainEqual(
+      expect.objectContaining({ event_type: "fallback_fired" }),
+    );
+  });
+
+  it("a template quick-reply tap is captured by collect_input as its label", async () => {
+    h.state.activeRuns = [{ ...RUN, current_node_key: "ask_name", vars: {} }];
+
+    const result = await dispatch({
+      kind: "interactive_reply",
+      reply_id: "BTN_PAYLOAD",
+      reply_title: "Alice",
+      meta_message_id: "m-tap",
+    });
+
+    expect(result).toMatchObject({ consumed: true, outcome: "advanced" });
+    expect(h.state.updates).toContainEqual(
+      expect.objectContaining({
+        table: "flow_runs",
+        row: expect.objectContaining({ vars: { name: "Alice" } }),
       }),
     );
   });

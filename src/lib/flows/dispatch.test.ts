@@ -317,3 +317,154 @@ describe("dispatchInboundToFlows — entry triggers (#490)", () => {
     expect(startedRuns()).toHaveLength(1);
   });
 });
+
+// ============================================================
+// Branching on WHICH template button was tapped.
+//
+// A broadcast template carries quick replies "Interested" and
+// "Not Interested". "contains" can't tell them apart ("Not Interested"
+// contains "Interested"), so the flow starts on an exact match and an
+// If/else on `trigger_text` picks the branch.
+// ============================================================
+
+describe("trigger_text: branching on the tapped template button", () => {
+  const LEAD_FLOW = {
+    ...KEYWORD_FLOW,
+    trigger_config: {
+      keywords: ["Interested", "Not Interested"],
+      match_type: "exact",
+    },
+  };
+  const LEAD_NODES = [
+    {
+      id: "n1",
+      flow_id: "flow-1",
+      node_key: "start",
+      node_type: "start",
+      config: { next_node_key: "which" },
+    },
+    {
+      id: "n2",
+      flow_id: "flow-1",
+      node_key: "which",
+      node_type: "condition",
+      config: {
+        subject: "var",
+        subject_key: "trigger_text",
+        operator: "equals",
+        value: "Not Interested",
+        true_next: "bye",
+        false_next: "great",
+      },
+    },
+    {
+      id: "n3",
+      flow_id: "flow-1",
+      node_key: "bye",
+      node_type: "send_message",
+      config: { text: "TRUE branch", next_node_key: "done" },
+    },
+    {
+      id: "n4",
+      flow_id: "flow-1",
+      node_key: "great",
+      node_type: "send_message",
+      config: { text: "FALSE branch", next_node_key: "done" },
+    },
+    {
+      id: "n5",
+      flow_id: "flow-1",
+      node_key: "done",
+      node_type: "end",
+      config: {},
+    },
+  ];
+
+  /** A Meta `type: "button"` template tap, as the webhook hands it over. */
+  function templateTap(label: string): ParsedInbound {
+    return {
+      kind: "interactive_reply",
+      reply_id: label,
+      reply_title: label,
+      meta_message_id: `m-${label}`,
+    };
+  }
+
+  beforeEach(() => {
+    h.state.flows = [LEAD_FLOW];
+    h.state.nodes = LEAD_NODES;
+  });
+
+  it("'Not Interested' tap starts the flow with trigger_text set and takes TRUE", async () => {
+    const result = await dispatch(templateTap("Not Interested"));
+
+    expect(result.consumed).toBe(true);
+    expect(startedRuns()).toHaveLength(1);
+    expect(startedRuns()[0].row.vars).toEqual({
+      trigger_text: "Not Interested",
+      trigger_payload: "Not Interested",
+    });
+    expect(engineSendText).toHaveBeenCalledTimes(1);
+    expect(engineSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "TRUE branch" }),
+    );
+  });
+
+  it("'Interested' tap takes FALSE", async () => {
+    const result = await dispatch(templateTap("Interested"));
+
+    expect(result.consumed).toBe(true);
+    expect(startedRuns()[0].row.vars).toMatchObject({
+      trigger_text: "Interested",
+    });
+    expect(engineSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "FALSE branch" }),
+    );
+  });
+
+  it("typing 'interested' behaves like tapping 'Interested'", async () => {
+    const result = await dispatch({
+      kind: "text",
+      text: " interested ",
+      meta_message_id: "m1",
+    });
+
+    expect(result.consumed).toBe(true);
+    expect(startedRuns()[0].row.vars).toEqual({ trigger_text: "interested" });
+    expect(engineSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "FALSE branch" }),
+    );
+  });
+
+  it("typing 'NOT interested' takes TRUE", async () => {
+    await dispatch({ kind: "text", text: "NOT interested", meta_message_id: "m1" });
+
+    expect(engineSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "TRUE branch" }),
+    );
+  });
+
+  it("'A message equals' does not fire on a longer message", async () => {
+    const result = await dispatch({
+      kind: "text",
+      text: "interested in pricing",
+      meta_message_id: "m1",
+    });
+
+    expect(result.consumed).toBe(false);
+    expect(startedRuns()).toEqual([]);
+  });
+
+  it("with two keyword flows, 'Not Interested' starts the more specific one", async () => {
+    h.state.flows = [
+      // Older, broader "contains" flow that would previously win.
+      { ...KEYWORD_FLOW, id: "flow-broad", trigger_config: { keywords: ["interested"] } },
+      { ...LEAD_FLOW, id: "flow-exact", created_at: "2026-02-01T00:00:00Z" },
+    ];
+
+    await dispatch(templateTap("Not Interested"));
+
+    expect(startedRuns()).toHaveLength(1);
+    expect(startedRuns()[0].row.flow_id).toBe("flow-exact");
+  });
+});

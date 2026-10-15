@@ -227,6 +227,14 @@ function RunCard({
         addSuffix: false,
       })
     : null;
+  // The message that started the run (engine `triggerVarsFor`), surfaced
+  // on the row so "why did it branch that way?" needs no expanding.
+  const triggerText =
+    typeof run.vars.trigger_text === "string" ? run.vars.trigger_text : null;
+  const triggerPayload =
+    typeof run.vars.trigger_payload === "string"
+      ? run.vars.trigger_payload
+      : null;
   return (
     <div className="rounded-lg border border-border bg-card">
       <button
@@ -265,6 +273,18 @@ function RunCard({
                 {t("atNode", { node: run.current_node_key })}
               </code>
             )}
+            {triggerText && (
+              <code
+                className="max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                title={
+                  triggerPayload && triggerPayload !== triggerText
+                    ? `trigger_payload: ${triggerPayload}`
+                    : undefined
+                }
+              >
+                {t("triggerText", { text: triggerText })}
+              </code>
+            )}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
             <span>{t("started", { time: format(new Date(run.started_at), "PP p") })}</span>
@@ -278,7 +298,7 @@ function RunCard({
       {expanded && (
         <div className="border-t border-border px-4 py-3">
           {Object.keys(run.vars).length > 0 && (
-            <details className="mb-3">
+            <details className="mb-3" open>
               <summary className="cursor-pointer text-xs text-muted-foreground">
                 {t("capturedVars", { count: Object.keys(run.vars).length })}
               </summary>
