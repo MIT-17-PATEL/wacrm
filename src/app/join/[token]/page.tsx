@@ -209,7 +209,7 @@ export default function JoinPage() {
     return (
       <Card className="w-full max-w-md border-border bg-card">
         <CardContent className="flex flex-col items-center gap-3 py-12">
-          <Loader2 className="size-6 animate-spin text-primary" />
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
           <p className="text-sm text-muted-foreground">{t('verifying')}</p>
         </CardContent>
       </Card>
@@ -222,8 +222,8 @@ export default function JoinPage() {
     return (
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10">
-            <MailX className="h-6 w-6 text-red-400" />
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-danger/10">
+            <MailX className="h-6 w-6 text-danger" />
           </div>
           <CardTitle className="text-xl text-foreground">
             {t(`fail.${failKey}Title`)}
@@ -282,8 +282,8 @@ export default function JoinPage() {
   // ----- Peek OK -----
   const inviteHeader = (
     <CardHeader className="items-center text-center">
-      <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-        <UsersRound className="h-6 w-6 text-primary" />
+      <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card">
+        <UsersRound className="h-6 w-6 text-muted-foreground" />
       </div>
       <CardTitle className="text-xl text-foreground">
         {t.rich('invitedTo', {
@@ -301,7 +301,7 @@ export default function JoinPage() {
           }),
           badge: (chunks) => (
             <span className="inline-flex items-center gap-1 text-foreground">
-              <ShieldCheck className="size-3.5 text-primary" />
+              <ShieldCheck className="size-3.5 text-muted-foreground" />
               {chunks}
             </span>
           ),
@@ -353,7 +353,7 @@ export default function JoinPage() {
           <DialogContent className="bg-popover border-border sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-popover-foreground">
-                <AlertTriangle className="size-4 text-amber-400" />
+                <AlertTriangle className="size-4 text-warning" />
                 {t('conflictTitle', { name: peek.account_name })}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">

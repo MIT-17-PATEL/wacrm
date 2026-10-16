@@ -129,7 +129,7 @@ export function ApiKeysSettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="text-primary size-6 animate-spin" />
+        <Loader2 className="text-muted-foreground size-6 animate-spin" />
       </div>
     );
   }
@@ -192,20 +192,20 @@ export function ApiKeysSettings() {
                       <div className="flex items-center gap-2">
                         <span
                           className={`truncate text-sm font-medium ${
-                            inactive
-                              ? 'text-muted-foreground line-through'
+ inactive
+ ? 'text-muted-foreground line-through'
                               : 'text-foreground'
                           }`}
                         >
                           {k.name}
                         </span>
                         {status === 'revoked' && (
-                          <Badge className="border-border bg-muted text-muted-foreground text-[10px] tracking-wide uppercase">
+                          <Badge className="border-border bg-muted text-muted-foreground text-[10px] ">
                             {t('revoked')}
                           </Badge>
                         )}
                         {status === 'expired' && (
-                          <Badge className="border-border bg-muted text-muted-foreground text-[10px] tracking-wide uppercase">
+                          <Badge className="border-border bg-muted text-muted-foreground text-[10px] ">
                             {t('expired')}
                           </Badge>
                         )}
@@ -248,7 +248,7 @@ export function ApiKeysSettings() {
                           size="sm"
                           onClick={() => handleRevoke(k)}
                           disabled={revoking === k.id}
-                          className="self-start border-red-500/40 bg-red-500/10 text-red-300 hover:border-red-500/60 hover:bg-red-500/20 hover:text-red-200 sm:self-auto"
+                          className="self-start border-danger/40 bg-danger/10 text-danger hover:border-danger/60 hover:bg-danger/20 hover:text-danger sm:self-auto"
                         >
                           {revoking === k.id ? (
                             <Loader2 className="size-4 animate-spin" />

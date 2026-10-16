@@ -5,19 +5,15 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Broadcast } from '@/types';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Radio, Plus, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Megaphone, Plus, Users } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
 import { getBroadcastStatus } from '@/lib/broadcast-status';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 
 /**
  * Poll cadence while any broadcast is sending. Kept modest so we don't
@@ -31,27 +27,37 @@ function percent(numerator: number, denominator: number): number {
   return Math.round((numerator / denominator) * 100);
 }
 
-function RateCell({
+/** Labelled progress bar for a delivery funnel step. */
+function RateBar({
+  label,
   value,
   total,
-  color,
+  tile,
 }: {
+  label: string;
   value: number;
   total: number;
-  /** Tailwind bg class for the fill, e.g. "bg-primary" */
-  color: string;
+  /** `tile-<accent>` class for the fill colour. */
+  tile: string;
 }) {
   const pct = percent(value, total);
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
-        {pct}%
-      </span>
-      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
-        <div
-          className={`h-1.5 rounded-full ${color}`}
-          style={{ width: `${pct}%` }}
-        />
+    <div className={tile}>
+      <div className="mb-1 flex items-baseline justify-between text-[11px]">
+        <span className="font-medium text-muted-foreground">{label}</span>
+        <span className="font-semibold text-foreground tabular-nums">
+          {value.toLocaleString()} <span className="text-muted-foreground">· {pct}%</span>
+        </span>
+      </div>
+      <div
+        className="h-1.5 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-label={label}
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className="bg-tile h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -62,6 +68,7 @@ export default function BroadcastsPage() {
   const t = useTranslations('Broadcasts.page');
   const tStatus = useTranslations('Broadcasts.status');
   const tGate = useTranslations('GatedButton');
+  const format = useFormatter();
   const canCreate = useCan('send-messages');
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,8 +141,13 @@ export default function BroadcastsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="space-y-6" aria-busy>
+        <Skeleton className="h-14 w-72 rounded-2xl" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-52 rounded-2xl" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -143,7 +155,7 @@ export default function BroadcastsPage() {
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
         <Button variant="outline" onClick={() => window.location.reload()}>
           {t('retry')}
         </Button>
@@ -181,110 +193,100 @@ export default function BroadcastsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('subtitle')}
-          </p>
-        </div>
-        <GatedButton
-          canAct={canCreate}
-          gateReason={tGate('reasons.createBroadcasts')}
-          onClick={() => router.push('/broadcasts/new')}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          {t('newBroadcast')}
-        </GatedButton>
-      </div>
-
-      {broadcasts.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-border bg-card">
-          <Radio className="mb-3 h-10 w-10 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">{t('noBroadcastsYet')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t('createFirst')}
-          </p>
+      <PageHeader
+        tile=""
+        icon={Megaphone}
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
           <GatedButton
             canAct={canCreate}
             gateReason={tGate('reasons.createBroadcasts')}
             onClick={() => router.push('/broadcasts/new')}
-            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
             {t('newBroadcast')}
           </GatedButton>
+        }
+      />
+
+      {broadcasts.length === 0 ? (
+        <div className="surface ">
+          <EmptyState
+            illustration="broadcast"
+            title={t('noBroadcastsYet')}
+            description={t('createFirst')}
+            action={
+              <GatedButton
+                canAct={canCreate}
+                gateReason={tGate('reasons.createBroadcasts')}
+                onClick={() => router.push('/broadcasts/new')}
+              >
+                <Plus className="h-4 w-4" />
+                {t('newBroadcast')}
+              </GatedButton>
+            }
+          />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">{t('table.name')}</TableHead>
-                <TableHead className="hidden text-muted-foreground md:table-cell">{t('table.template')}</TableHead>
-                <TableHead className="hidden text-right text-muted-foreground sm:table-cell">
-                  {t('table.recipients')}
-                </TableHead>
-                <TableHead className="hidden text-muted-foreground lg:table-cell">{t('table.delivery')}</TableHead>
-                <TableHead className="hidden text-muted-foreground lg:table-cell">{t('table.read')}</TableHead>
-                <TableHead className="text-muted-foreground">{t('table.status')}</TableHead>
-                <TableHead className="hidden text-muted-foreground sm:table-cell">{t('table.date')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {broadcasts.map((broadcast) => {
-                const status = getBroadcastStatus(broadcast.status);
-                return (
-                  <TableRow
-                    key={broadcast.id}
-                    className="cursor-pointer border-border hover:bg-muted/50"
-                    onClick={() => router.push(`/broadcasts/${broadcast.id}`)}
-                  >
-                    <TableCell className="font-medium text-foreground">
-                      {broadcast.name}
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground md:table-cell">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {broadcasts.map((broadcast) => {
+            const status = getBroadcastStatus(broadcast.status);
+            const total = broadcast.total_recipients;
+            return (
+              <Link
+                key={broadcast.id}
+                href={`/broadcasts/${broadcast.id}`}
+                className="surface surface-hover group flex flex-col gap-4 p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="icon-tile size-10 rounded-xl">
+                    <Megaphone className="size-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-foreground">{broadcast.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {broadcast.template_name}
-                    </TableCell>
-                    <TableCell className="hidden text-right text-muted-foreground tabular-nums sm:table-cell">
-                      {broadcast.total_recipients}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <RateCell
-                        value={broadcast.delivered_count}
-                        total={broadcast.total_recipients}
-                        color="bg-primary"
-                      />
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <RateCell
-                        value={broadcast.read_count}
-                        total={broadcast.total_recipients}
-                        color="bg-blue-500"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${status.classes}`}
-                      >
-                        {status.pulse && (
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                          </span>
-                        )}
-                        {tStatus(status.label)}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${status.classes}`}
+                  >
+                    {status.pulse && (
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full hidden rounded-full bg-warning opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-warning" />
                       </span>
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground sm:table-cell">
-                      {new Date(broadcast.created_at).toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    )}
+                    {tStatus(status.label)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="size-3.5" />
+                    <span className="font-semibold text-foreground tabular-nums">
+                      {total.toLocaleString()}
+                    </span>
+                    {t('table.recipients')}
+                  </span>
+                  <span className="ml-auto">
+                    {format.dateTime(new Date(broadcast.scheduled_at ?? broadcast.created_at), {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <RateBar label={t('table.delivery')} value={broadcast.delivered_count} total={total} tile="tile-success" />
+                  <RateBar label={t('table.read')} value={broadcast.read_count} total={total} tile="tile-info" />
+                  <RateBar label={t('replied')} value={broadcast.replied_count} total={total} tile="" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

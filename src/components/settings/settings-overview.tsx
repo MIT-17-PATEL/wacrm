@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { createClient } from '@/lib/supabase/client';
@@ -9,208 +9,213 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/hooks/use-theme';
 import { THEMES } from '@/lib/themes';
 import { CURRENCIES } from '@/lib/currency';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card';
+import { ContactAvatar } from '@/components/ui/contact-avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-import { SECTION_META, type SettingsSection } from './settings-sections';
+import { SECTION_META, SECTION_TILE, type SettingsSection } from './settings-sections';
 import { SettingsChip, StatusDot } from './settings-chip';
 import { ROLE_META } from './role-meta';
 
-interface OverviewCounts {
-  members: number | null;
-  pendingInvites: number | null;
-  templates: number | null;
-  templatesPending: number | null;
-  tags: number | null;
-  customFields: number | null;
-}
+/** A tile's async status line: undefined = loading, null = unavailable. */
+type Loadable<T> = T | null | undefined;
 
 interface WhatsAppStatus {
   configured: boolean;
   connected: boolean;
+  /** Display number from Meta, when the (slower) live check returns. */
+  phone?: string | null;
 }
 
+/** Resolve to `null` instead of hanging when a request is slow. */
+function withTimeout<T>(p: PromiseLike<T>, ms = 8000): Promise<T | null> {
+  return Promise.race([
+    Promise.resolve(p).catch(() => null),
+    new Promise<null>((r) => setTimeout(() => r(null), ms)),
+  ]);
+}
+
+async function getJson(url: string): Promise<Record<string, unknown> | null> {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) return null;
+  return (await res.json().catch(() => null)) as Record<string, unknown> | null;
+}
+
+/**
+ * Settings landing: identity card + one tile per section with a real
+ * status line.
+ *
+ * Loading bug fix: every tile now loads on its own, each request has a
+ * timeout, and a tile whose data can't be fetched falls back to a
+ * plain description. Previously the tiles shared one loading flag
+ * gated on a live Meta ping and on auth resolving, and a cancelled or
+ * slow run left them on "Loading…" for good.
+ */
 export function SettingsOverview({
   onSelect,
 }: {
   onSelect: (section: SettingsSection) => void;
 }) {
-  const { user, profile, accountId, accountRole, defaultCurrency, canManageMembers } =
+  const { user, profile, accountId, accountRole, accountStatus, defaultCurrency, canManageMembers } =
     useAuth();
   const { mode, theme } = useTheme();
   const t = useTranslations('Settings.overview');
   const tRoles = useTranslations('Settings.roles');
   const tSections = useTranslations('Settings.sections');
 
-  const [counts, setCounts] = useState<OverviewCounts | null>(null);
-  const [countsLoading, setCountsLoading] = useState(true);
-  // WhatsApp status is tracked separately: its health check decrypts the
-  // token and pings Meta, which is far slower than the cheap count
-  // queries. Gating it independently keeps a slow/flaky Meta round-trip
-  // from blanking the rest of the landing.
-  const [whatsapp, setWhatsapp] = useState<WhatsAppStatus | null>(null);
-  const [whatsappLoading, setWhatsappLoading] = useState(true);
+  const [whatsapp, setWhatsapp] = useState<Loadable<WhatsAppStatus>>(undefined);
+  const [members, setMembers] = useState<Loadable<{ members: number; invites: number | null }>>(undefined);
+  const [templates, setTemplates] = useState<Loadable<{ approved: number; total: number; pending: number }>>(undefined);
+  const [fields, setFields] = useState<Loadable<{ tags: number; fields: number }>>(undefined);
+
+  // No account to read from (unlinked / failed) → stop loading.
+  const noAccount = !accountId && accountStatus !== 'loading';
 
   useEffect(() => {
     if (!user || !accountId) return;
     let cancelled = false;
     const supabase = createClient();
-    const userId = user.id;
     const acctId = accountId;
+    const set = <T,>(fn: (v: T) => void) => (v: T) => {
+      if (!cancelled) fn(v);
+    };
 
-    // Cheap counts — resolve fast, render immediately.
-    (async () => {
-      setCountsLoading(true);
-      const [membersRes, invitesRes, templatesTotal, templatesPending, tagsRes, fieldsRes] =
-        await Promise.allSettled([
-          fetch('/api/account/members', { cache: 'no-store' }).then((r) => r.json()),
-          canManageMembers
-            ? fetch('/api/account/invitations', { cache: 'no-store' }).then((r) =>
-                r.json(),
-              )
-            : Promise.resolve(null),
-          supabase
-            .from('message_templates')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', userId),
-          supabase
-            .from('message_templates')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .eq('status', 'PENDING'),
-          supabase
-            .from('tags')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', userId),
-          supabase.from('custom_fields').select('id', { count: 'exact', head: true }),
-        ]);
-
-      if (cancelled) return;
-
-      const members =
-        membersRes.status === 'fulfilled' && Array.isArray(membersRes.value?.members)
-          ? membersRes.value.members.length
-          : null;
-      const pendingInvites =
-        invitesRes.status === 'fulfilled' &&
-        invitesRes.value &&
-        Array.isArray(invitesRes.value.invitations)
-          ? invitesRes.value.invitations.length
-          : null;
-
-      setCounts({
-        members,
-        pendingInvites,
-        templates:
-          templatesTotal.status === 'fulfilled'
-            ? templatesTotal.value.count ?? null
-            : null,
-        templatesPending:
-          templatesPending.status === 'fulfilled'
-            ? templatesPending.value.count ?? null
-            : null,
-        tags: tagsRes.status === 'fulfilled' ? tagsRes.value.count ?? null : null,
-        customFields:
-          fieldsRes.status === 'fulfilled' ? fieldsRes.value.count ?? null : null,
-      });
-      setCountsLoading(false);
-    })();
-
-    // WhatsApp connection status — slower, independent.
-    (async () => {
-      setWhatsappLoading(true);
-      const [row, health] = await Promise.allSettled([
+    // WhatsApp: the stored status first (fast), then the display number
+    // from the live Meta check if it answers in time.
+    void (async () => {
+      const row = await withTimeout(
         supabase
           .from('whatsapp_config')
-          .select('phone_number_id')
+          .select('phone_number_id, status')
           .eq('account_id', acctId)
           .maybeSingle(),
-        fetch('/api/whatsapp/config', { cache: 'no-store' }).then((r) => r.json()),
-      ]);
-      if (cancelled) return;
-      setWhatsapp({
-        configured: row.status === 'fulfilled' && !!row.value.data?.phone_number_id,
-        connected: health.status === 'fulfilled' && !!health.value?.connected,
+      );
+      const data = row?.data as { phone_number_id?: string; status?: string } | null | undefined;
+      const base: WhatsAppStatus = {
+        configured: !!data?.phone_number_id,
+        connected: data?.status === 'connected',
+      };
+      set(setWhatsapp)(row ? base : null);
+      if (!base.configured) return;
+      const live = await withTimeout(getJson('/api/whatsapp/config'), 10_000);
+      if (!live) return;
+      const info = live.phone_info as { display_phone_number?: string } | undefined;
+      set(setWhatsapp)({
+        ...base,
+        connected: !!live.connected,
+        phone: info?.display_phone_number ?? null,
       });
-      setWhatsappLoading(false);
+    })();
+
+    void (async () => {
+      const [m, inv] = await Promise.all([
+        withTimeout(getJson('/api/account/members')),
+        canManageMembers ? withTimeout(getJson('/api/account/invitations')) : Promise.resolve(null),
+      ]);
+      const list = m?.members;
+      set(setMembers)(
+        Array.isArray(list)
+          ? {
+              members: list.length,
+              invites: Array.isArray(inv?.invitations) ? (inv.invitations as unknown[]).length : null,
+            }
+          : null,
+      );
+    })();
+
+    void (async () => {
+      const count = (status?: string) => {
+        let q = supabase.from('message_templates').select('id', { count: 'exact', head: true });
+        if (status) q = q.eq('status', status);
+        return withTimeout(q);
+      };
+      const [total, approved, pending] = await Promise.all([
+        count(),
+        count('APPROVED'),
+        count('PENDING'),
+      ]);
+      set(setTemplates)(
+        total && total.count != null
+          ? { total: total.count, approved: approved?.count ?? 0, pending: pending?.count ?? 0 }
+          : null,
+      );
+    })();
+
+    void (async () => {
+      const [tags, cf] = await Promise.all([
+        withTimeout(supabase.from('tags').select('id', { count: 'exact', head: true })),
+        withTimeout(supabase.from('custom_fields').select('id', { count: 'exact', head: true })),
+      ]);
+      set(setFields)(
+        tags?.count != null || cf?.count != null
+          ? { tags: tags?.count ?? 0, fields: cf?.count ?? 0 }
+          : null,
+      );
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [user?.id, accountId, canManageMembers]);
+  }, [user, accountId, canManageMembers]);
 
   const displayName = profile?.full_name || profile?.email || t('yourAccount');
-  const initial = (profile?.full_name || profile?.email || 'U').charAt(0).toUpperCase();
   const roleMeta = accountRole ? ROLE_META[accountRole] : null;
   const RoleIcon = roleMeta?.icon;
 
   const currencyLabel =
     CURRENCIES.find((c) => c.code === defaultCurrency)?.label ?? defaultCurrency;
-  const themeName = THEMES.find((t) => t.id === theme)?.name ?? theme;
+  const themeName = THEMES.find((th) => th.id === theme)?.name ?? theme;
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const loading = (v: unknown) => v === undefined && !noAccount;
 
-  // Per-tile loading + subtitle. `null` counts render as a graceful
-  // fallback so a single failed query never blanks a tile.
-  const tiles: {
-    section: SettingsSection;
-    loading: boolean;
-    subtitle: ReactNode;
-  }[] = [
+  const tiles: { section: SettingsSection; loading: boolean; subtitle: ReactNode }[] = [
     {
       section: 'whatsapp',
-      loading: whatsappLoading,
+      loading: loading(whatsapp),
       subtitle: !whatsapp?.configured ? (
         t('notSetup')
       ) : whatsapp.connected ? (
         <>
-          <StatusDot tone="ok" /> {t('connected')}
+          <StatusDot tone="ok" />
+          {whatsapp.phone ? t('connectedNumber', { phone: whatsapp.phone }) : t('connected')}
         </>
       ) : (
         <>
-          <StatusDot tone="muted" /> {t('needsReconnecting')}
+          <StatusDot tone="bad" /> {t('needsReconnecting')}
         </>
       ),
     },
     {
       section: 'members',
-      loading: countsLoading,
-      subtitle:
-        counts?.members == null
-          ? t('viewTeamMembers')
-          : `${t('membersCount', { count: counts.members })}${
-              counts.pendingInvites
-                ? ` · ${t('pendingInvites', { count: counts.pendingInvites })}`
-                : ''
-            }`,
+      loading: loading(members),
+      subtitle: !members
+        ? t('viewTeamMembers')
+        : `${t('membersCount', { count: members.members })}${
+            members.invites ? ` · ${t('pendingInvites', { count: members.invites })}` : ''
+          }`,
     },
     {
       section: 'templates',
-      loading: countsLoading,
-      subtitle:
-        counts?.templates == null
-          ? t('manageTemplates')
-          : `${t('templatesCount', { count: counts.templates })}${
-              counts.templatesPending
-                ? ` · ${t('pendingReview', { count: counts.templatesPending })}`
-                : ''
+      loading: loading(templates),
+      subtitle: !templates
+        ? t('manageTemplates')
+        : templates.total === 0
+          ? t('noTemplates')
+          : `${t('approvedTemplates', { count: templates.approved })}${
+              templates.pending ? ` · ${t('pendingReview', { count: templates.pending })}` : ''
             }`,
+    },
+    {
+      section: 'fields',
+      loading: loading(fields),
+      subtitle: !fields
+        ? t('tagsAndFields')
+        : `${t('tagsCount', { count: fields.tags })} · ${t('fieldsCount', { count: fields.fields })}`,
     },
     {
       section: 'deals',
       loading: false,
       subtitle: `${defaultCurrency} — ${currencyLabel}`,
-    },
-    {
-      section: 'fields',
-      loading: countsLoading,
-      subtitle:
-        counts?.tags == null && counts?.customFields == null
-          ? t('tagsAndFields')
-          : `${t('tagsCount', { count: counts?.tags ?? 0 })} · ${t('fieldsCount', {
-              count: counts?.customFields ?? 0,
-            })}`,
     },
     {
       section: 'appearance',
@@ -222,23 +227,19 @@ export function SettingsOverview({
   return (
     <section className="animate-in fade-in-50 duration-200">
       {/* Identity */}
-      <Card className="flex-row items-center gap-4 px-5 py-5">
-        <Avatar size="lg" className="size-14">
-          {profile?.avatar_url ? (
-            <AvatarImage src={profile.avatar_url} alt={displayName} />
-          ) : null}
-          <AvatarFallback className="bg-primary/10 text-xl text-primary">
-            {initial}
-          </AvatarFallback>
-        </Avatar>
+      <div className="surface relative flex items-center gap-4 overflow-hidden px-5 py-5">
+        <span aria-hidden className="bg-primary pointer-events-none absolute inset-x-0 top-0 h-1" />
+        <ContactAvatar
+          name={displayName}
+          seed={user?.id ?? displayName}
+          src={profile?.avatar_url}
+          size="lg"
+          className="size-14"
+        />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold text-foreground">
-            {displayName}
-          </div>
+          <div className="truncate text-lg font-semibold text-foreground">{displayName}</div>
           {profile?.email ? (
-            <div className="truncate text-sm text-muted-foreground">
-              {profile.email}
-            </div>
+            <div className="truncate text-sm text-muted-foreground">{profile.email}</div>
           ) : null}
         </div>
         {roleMeta && RoleIcon ? (
@@ -247,11 +248,11 @@ export function SettingsOverview({
             {tRoles(accountRole!)}
           </SettingsChip>
         ) : null}
-      </Card>
+      </div>
 
       {/* Status tiles */}
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {tiles.map(({ section, loading, subtitle }) => {
+        {tiles.map(({ section, loading: isLoading, subtitle }) => {
           const meta = SECTION_META[section];
           const Icon = meta.icon;
           return (
@@ -259,29 +260,25 @@ export function SettingsOverview({
               key={section}
               type="button"
               onClick={() => onSelect(section)}
-              className={cn(
-                'group flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 text-left transition-colors',
-                'hover:border-primary-soft-2 hover:bg-card-2',
-              )}
+              className={cn(SECTION_TILE[section], 'surface surface-hover group flex items-start gap-3.5 p-4 text-left')}
             >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
-                <Icon className="size-4" />
+              <span className="icon-tile size-10 rounded-xl">
+                <Icon className="size-5" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-foreground">
-                  {tSections(section)}
-                </span>
-                <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  {loading ? (
+                <span className="block text-sm font-semibold text-foreground">{tSections(section)}</span>
+                <span className="mt-1 flex min-h-4 items-center gap-1.5 text-xs text-muted-foreground">
+                  {isLoading ? (
                     <>
-                      <Loader2 className="size-3 animate-spin" /> {t('loading')}
+                      <span className="sr-only">{t('loading')}</span>
+                      <Skeleton className="h-3 w-32" />
                     </>
                   ) : (
                     subtitle
                   )}
                 </span>
               </span>
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform " />
             </button>
           );
         })}

@@ -69,7 +69,8 @@ export function formatCurrency(
   const code = (currency || DEFAULT_CURRENCY).trim();
   const amount = Number(value) || 0;
   try {
-    return new Intl.NumberFormat(undefined, {
+    // Rupees group the Indian way (₹12,34,567) whatever the UI locale.
+    return new Intl.NumberFormat(code === "INR" ? "en-IN" : undefined, {
       style: "currency",
       currency: code,
       minimumFractionDigits: 0,
@@ -95,6 +96,7 @@ export function formatCurrencyShort(
 ): string {
   const code = currency || DEFAULT_CURRENCY;
   const symbol = CURRENCIES.find((c) => c.code === code)?.symbol ?? `${code} `;
+  if (code === "INR") return `${symbol}${formatCompactIndian(value)}`;
   return `${symbol}${formatCompactNumber(value)}`;
 }
 
@@ -108,4 +110,16 @@ export function formatCompactNumber(value: number): string {
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
   return v.toFixed(0);
+}
+
+/**
+ * Compact number in the Indian system: lakh (1,00,000) → "L", crore
+ * (1,00,00,000) → "Cr"; below a lakh it matches formatCompactNumber.
+ * 1_250_000 → "12.5L", 32_000_000 → "3.2Cr".
+ */
+export function formatCompactIndian(value: number): string {
+  const v = Number(value || 0);
+  if (v >= 10_000_000) return `${(v / 10_000_000).toFixed(1)}Cr`;
+  if (v >= 100_000) return `${(v / 100_000).toFixed(1)}L`;
+  return formatCompactNumber(v);
 }

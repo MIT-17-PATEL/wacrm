@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
-import { LogOut, Menu, Settings as SettingsIcon, User } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { useTranslations } from "next-intl";
+import { ChevronRight, LogOut, Search, Settings as SettingsIcon, User } from "lucide-react";
+
+import { LogoMark } from "@/components/brand/logo";
+import { initialsOf } from "@/components/ui/contact-avatar";
+import { useCommandPalette } from "@/components/layout/command-palette";
+import { ModeToggle } from "@/components/layout/mode-toggle";
+import { WhatsAppStatusChip } from "@/components/layout/whatsapp-status-chip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,133 +18,118 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ModeToggle } from "@/components/layout/mode-toggle";
+import { useAuth } from "@/hooks/use-auth";
+import { crumbsForPath } from "@/lib/nav";
 
-const pageTitles: Record<string, string> = {
-  "/dashboard": "dashboard",
-  "/inbox": "inbox",
-  "/notifications": "notifications",
-  "/contacts": "contacts",
-  "/pipelines": "pipelines",
-  "/broadcasts": "broadcasts",
-  "/automations": "automations",
-  "/settings": "settings",
-};
-
-function getPageTitleKey(pathname: string): string {
-  if (pageTitles[pathname]) return pageTitles[pathname];
-  const match = Object.entries(pageTitles).find(([path]) =>
-    pathname.startsWith(path),
-  );
-  return match ? match[1] : "dashboard";
-}
-
-interface HeaderProps {
-  /** Wired to the shell's drawer state. Used only on mobile — the
-   *  hamburger button is hidden on lg+. */
-  onOpenSidebar?: () => void;
-}
-
-import { useTranslations } from "next-intl";
-
-export function Header({ onOpenSidebar }: HeaderProps) {
+/**
+ * Glass top bar: page title + breadcrumb (derived from the shared nav
+ * config, so every route — Flows and AI Agents included — gets its own
+ * title), the Ctrl/⌘+K search trigger, the WhatsApp connection chip,
+ * the theme toggle and the account menu.
+ */
+export function Header() {
   const t = useTranslations("Header");
+  const tn = useTranslations("Nav");
+  const tp = useTranslations("CommandPalette");
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
-  const titleKey = getPageTitleKey(pathname);
+  const palette = useCommandPalette();
 
-  const initial =
-    profile?.full_name?.charAt(0)?.toUpperCase() ??
-    profile?.email?.charAt(0)?.toUpperCase() ??
-    "U";
+  const { item, group, subKey } = crumbsForPath(pathname);
+  const pageLabel = item ? tn(`items.${item.module}`) : tn("items.dashboard");
+  const title = subKey ? tn(`sub.${subKey}`) : pageLabel;
+
+  const crumbs: Array<{ label: string; href?: string }> = [];
+  if (group) crumbs.push({ label: tn(`groups.${group}`) });
+  if (subKey && item) crumbs.push({ label: pageLabel, href: item.href });
+
+  const initial = initialsOf(profile?.full_name || profile?.email || "U");
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 lg:px-6">
-      <div className="flex min-w-0 items-center gap-2">
-        {/* Hamburger — mobile only. 44×44 hit target per Apple HIG. */}
-        <button
-          type="button"
-          onClick={onOpenSidebar}
-          aria-label={t("openMenu")}
-          className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-          {t(titleKey as string)}
-        </h1>
-      </div>
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-4 lg:px-6">
+      <Link href="/dashboard" className="lg:hidden" aria-label={tn("items.dashboard")}>
+        <LogoMark className="size-5" />
+      </Link>
 
-      <div className="flex items-center gap-1 sm:gap-2">
-        <ModeToggle />
+      {/* Breadcrumb doubles as the page heading for assistive tech. */}
+      <nav aria-label={tn("breadcrumb")} className="min-w-0 flex-1">
+        <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+          {crumbs.map((c) => (
+            <li key={c.label} className="hidden items-center gap-1.5 text-muted-foreground sm:flex">
+              {c.href ? (
+                <Link href={c.href} className="hover:text-foreground">
+                  {c.label}
+                </Link>
+              ) : (
+                <span>{c.label}</span>
+              )}
+              <ChevronRight className="size-3.5 text-faint" aria-hidden />
+            </li>
+          ))}
+          <li className="min-w-0" aria-current="page">
+            <h1 className="truncate text-sm font-medium text-foreground">{title}</h1>
+          </li>
+        </ol>
+      </nav>
 
-        <DropdownMenu>
+      <button
+        type="button"
+        onClick={palette.open}
+        className="hidden h-8 w-60 items-center gap-2 rounded-lg border border-border bg-card px-2.5 text-[13px] text-muted-foreground transition-colors hover:border-border-strong md:flex"
+      >
+        <Search className="size-3.5" />
+        <span className="flex-1 truncate text-left">{tp("trigger")}</span>
+        <kbd className="rounded border border-border px-1 font-sans text-[10px] text-faint">Ctrl K</kbd>
+      </button>
+      <button
+        type="button"
+        onClick={palette.open}
+        aria-label={tp("trigger")}
+        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+      >
+        <Search className="size-4" />
+      </button>
+
+      <WhatsAppStatusChip />
+      <ModeToggle />
+
+      <DropdownMenu>
         <DropdownMenuTrigger
-          className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted/70 focus:bg-muted/70 focus:outline-none data-popup-open:bg-muted/70 sm:gap-3 sm:pl-1 sm:pr-3"
+          className="flex items-center rounded-full"
           aria-label={t("openAccountMenu")}
         >
-          <Avatar className="size-8">
+          <Avatar className="size-7">
             {profile?.avatar_url ? (
-              <AvatarImage
-                src={profile.avatar_url}
-                alt={profile.full_name ?? t("defaultAvatar")}
-              />
+              <AvatarImage src={profile.avatar_url} alt={profile.full_name ?? t("defaultAvatar")} />
             ) : null}
-            <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
+            <AvatarFallback className="border border-border bg-card-2 text-xs font-medium text-muted-foreground">
               {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm font-medium text-foreground sm:inline">
-            {profile?.full_name ?? t("defaultUser")}
-          </span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          sideOffset={6}
-          className="min-w-56 bg-popover text-popover-foreground ring-border"
-        >
+        <DropdownMenuContent align="end" sideOffset={8} className="min-w-60">
           <div className="px-2 py-1.5">
-            <p className="truncate text-sm font-medium text-foreground">
+            <p className="truncate text-sm font-semibold text-foreground">
               {profile?.full_name ?? t("defaultUser")}
             </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {profile?.email ?? ""}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{profile?.email ?? ""}</p>
           </div>
-          <DropdownMenuSeparator className="bg-border" />
-          <DropdownMenuItem
-            render={
-              <Link
-                href="/settings?tab=profile"
-                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-              />
-            }
-          >
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link href="/settings?tab=profile" />}>
             <User className="size-4" />
             {t("menuProfile")}
           </DropdownMenuItem>
-          <DropdownMenuItem
-            render={
-              <Link
-                href="/settings?tab=whatsapp"
-                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-              />
-            }
-          >
+          <DropdownMenuItem render={<Link href="/settings" />}>
             <SettingsIcon className="size-4" />
             {t("menuSettings")}
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-border" />
-          <DropdownMenuItem
-            onClick={signOut}
-            className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-          >
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={signOut} variant="destructive">
             <LogOut className="size-4" />
             {t("menuSignOut")}
           </DropdownMenuItem>
         </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      </DropdownMenu>
     </header>
   );
 }

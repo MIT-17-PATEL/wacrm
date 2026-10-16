@@ -11,15 +11,38 @@ import { Step2SelectAudience } from '@/components/broadcasts/step2-select-audien
 import { Step3Personalize } from '@/components/broadcasts/step3-personalize';
 import { Step4ScheduleSend } from '@/components/broadcasts/step4-schedule-send';
 import { useBroadcastSending } from '@/hooks/use-broadcast-sending';
-import { Check } from 'lucide-react';
+import { Check, Megaphone } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { PageHeader } from '@/components/ui/page-header';
+import { PhoneMockup, PreviewBubble } from '@/components/ui/phone-mockup';
+import { BRAND } from '@/lib/brand';
+import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
 const steps = [
-  { label: 'template', key: 'template' },
   { label: 'audience', key: 'audience' },
+  { label: 'template', key: 'template' },
   { label: 'personalize', key: 'personalize' },
   { label: 'send', key: 'send' },
 ] as const;
+
+type VariableMap = Record<string, { type: 'static' | 'field' | 'custom_field'; value: string }>;
+
+/** Template body with {{n}} filled from the wizard's variable mapping. */
+function previewBody(body: string, variables: VariableMap): ReactNode[] {
+  const parts = body.split(/(\{\{\s*\d+\s*\}\})/g);
+  return parts.map((part, i) => {
+    const m = part.match(/^\{\{\s*(\d+)\s*\}\}$/);
+    if (!m) return part;
+    const v = variables[m[1]];
+    if (v?.type === 'static' && v.value) return <strong key={i}>{v.value}</strong>;
+    return (
+      <span key={i} className="rounded bg-black/15 px-1 font-semibold">
+        {v?.value ? `{${v.value}}` : part}
+      </span>
+    );
+  });
+}
 
 export default function NewBroadcastPage() {
   const router = useRouter();
@@ -40,9 +63,7 @@ export default function NewBroadcastPage() {
     csvContacts?: { phone: string; name?: string }[];
     excludeTagIds?: string[];
   }>({ type: 'all' });
-  const [variables, setVariables] = useState<
-    Record<string, { type: 'static' | 'field' | 'custom_field'; value: string }>
-  >({});
+  const [variables, setVariables] = useState<VariableMap>({});
   const [headerMediaUrl, setHeaderMediaUrl] = useState('');
   const [name, setName] = useState('');
 
@@ -130,105 +151,144 @@ export default function NewBroadcastPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('subtitle')}
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        tile=""
+        icon={Megaphone}
+        title={t('title')}
+        description={t('subtitle')}
+      />
 
-      {/* Step Indicator */}
-      <div className="flex items-center justify-between">
+      {/* Stepper */}
+      <ol className="surface flex items-center gap-2 overflow-x-auto p-3 sm:p-4">
         {steps.map((step, index) => {
           const isActive = index === currentStep;
           const isCompleted = index < currentStep;
-
           return (
-            <div key={step.key} className="flex flex-1 items-center">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-all ${
-                    isCompleted
-                      ? 'bg-primary text-primary-foreground'
-                      : isActive
-                        ? 'border-2 border-primary bg-primary/10 text-primary'
-                        : 'border border-border bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
-                </div>
-                <span
-                  className={`hidden text-sm font-medium sm:block ${
-                    isActive ? 'text-foreground' : isCompleted ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  {t(`steps.${step.label}`)}
-                </span>
-              </div>
+            <li key={step.key} className="flex flex-1 items-center gap-2" aria-current={isActive ? 'step' : undefined}>
+              <span
+                className={cn(
+                  'flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all',
+                  isCompleted
+                    ? 'bg-primary text-primary-foreground'
+                    : isActive
+                      ? 'bg-muted text-tile ring-2 ring-current'
+                      : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+              </span>
+              <span
+                className={cn(
+                  'hidden text-sm font-semibold whitespace-nowrap sm:block',
+                  isActive ? 'text-foreground' : 'text-muted-foreground',
+                )}
+              >
+                {t(`steps.${step.label}`)}
+              </span>
               {index < steps.length - 1 && (
-                <div
-                  className={`mx-3 h-px flex-1 ${
-                    index < currentStep ? 'bg-primary' : 'bg-muted'
-                  }`}
+                <span
+                  aria-hidden
+                  className={cn(
+                    'mx-1 h-0.5 min-w-4 flex-1 rounded-full',
+                    index < currentStep ? 'bg-primary' : 'bg-muted',
+                  )}
                 />
               )}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
 
-      {/* Step Content */}
-      <div className="relative min-h-[400px]">
-        <div
-          className="transition-all duration-300 ease-in-out"
-          style={{
-            opacity: isProcessing ? 0.6 : 1,
-            pointerEvents: isProcessing ? 'none' : 'auto',
-          }}
-        >
-          {currentStep === 0 && (
-            <Step1ChooseTemplate
-              selectedTemplate={template}
-              onSelect={setTemplate}
-              onNext={() => setCurrentStep(1)}
-              onBack={() => router.push('/broadcasts')}
-            />
-          )}
-          {currentStep === 1 && (
-            <Step2SelectAudience
-              audience={audience}
-              onUpdate={setAudience}
-              onNext={() => setCurrentStep(2)}
-              onBack={() => setCurrentStep(0)}
-            />
-          )}
-          {currentStep === 2 && template && (
-            <Step3Personalize
-              template={template}
-              variables={variables}
-              onUpdate={setVariables}
-              headerMediaUrl={headerMediaUrl}
-              onHeaderMediaUrlChange={setHeaderMediaUrl}
-              onNext={() => setCurrentStep(3)}
-              onBack={() => setCurrentStep(1)}
-            />
-          )}
-          {currentStep === 3 && template && (
-            <Step4ScheduleSend
-              name={name}
-              onNameChange={setName}
-              template={template}
-              audience={audience}
-              onSend={handleSend}
-              onSaveDraft={handleSaveDraft}
-              onBack={() => setCurrentStep(2)}
-              isProcessing={isProcessing}
-              progress={progress}
-            />
-          )}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Step Content */}
+        <div className="surface relative min-h-[400px] min-w-0 p-5 sm:p-6">
+          <div
+            className="transition-all duration-300 ease-in-out"
+            style={{
+              opacity: isProcessing ? 0.6 : 1,
+              pointerEvents: isProcessing ? 'none' : 'auto',
+            }}
+          >
+            {currentStep === 0 && (
+              <Step2SelectAudience
+                audience={audience}
+                onUpdate={setAudience}
+                onNext={() => setCurrentStep(1)}
+                onBack={() => router.push('/broadcasts')}
+              />
+            )}
+            {currentStep === 1 && (
+              <Step1ChooseTemplate
+                selectedTemplate={template}
+                onSelect={setTemplate}
+                onNext={() => setCurrentStep(2)}
+                onBack={() => setCurrentStep(0)}
+              />
+            )}
+            {currentStep === 2 && template && (
+              <Step3Personalize
+                template={template}
+                variables={variables}
+                onUpdate={setVariables}
+                headerMediaUrl={headerMediaUrl}
+                onHeaderMediaUrlChange={setHeaderMediaUrl}
+                onNext={() => setCurrentStep(3)}
+                onBack={() => setCurrentStep(1)}
+              />
+            )}
+            {currentStep === 3 && template && (
+              <Step4ScheduleSend
+                name={name}
+                onNameChange={setName}
+                template={template}
+                audience={audience}
+                onSend={handleSend}
+                onSaveDraft={handleSaveDraft}
+                onBack={() => setCurrentStep(2)}
+                isProcessing={isProcessing}
+                progress={progress}
+              />
+            )}
+          </div>
         </div>
+
+        {/* Live preview */}
+        <aside className="lg:sticky lg:top-4" aria-label={t('previewTitle')}>
+          <p className="mb-3 text-center text-xs font-semibold text-muted-foreground ">
+            {t('previewTitle')}
+          </p>
+          <PhoneMockup title={BRAND.name} subtitle={t('previewSubtitle')}>
+            {template ? (
+              <PreviewBubble from="business" time="10:24" label={template.name}>
+                {template.header_type === 'text' && template.header_content ? (
+                  <p className="mb-1 font-semibold">{template.header_content}</p>
+                ) : template.header_type ? (
+                  <div className="mb-2 flex h-24 items-center justify-center rounded-lg bg-black/15 text-[11px] font-semibold ">
+                    {template.header_type}
+                  </div>
+                ) : null}
+                {previewBody(template.body_text, variables)}
+                {template.footer_text ? (
+                  <p className="mt-1.5 text-[10.5px] opacity-75">{template.footer_text}</p>
+                ) : null}
+                {template.buttons?.length ? (
+                  <div className="mt-2 -mx-1 space-y-1 border-t border-black/15 pt-1.5">
+                    {template.buttons.map((b, i) => (
+                      <div key={i} className="rounded-lg bg-black/10 py-1 text-center text-[11.5px] font-semibold">
+                        {b.text}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </PreviewBubble>
+            ) : (
+              <div className="m-auto max-w-[200px] text-center text-xs text-muted-foreground">
+                {t('previewEmpty')}
+              </div>
+            )}
+          </PhoneMockup>
+        </aside>
       </div>
     </div>
   );

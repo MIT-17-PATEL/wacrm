@@ -31,6 +31,9 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 import type { WhatsAppConfig as WhatsAppConfigType } from '@/types';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { Wifi, WifiOff } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const MASKED_TOKEN = '••••••••••••••••';
 
@@ -62,6 +65,7 @@ type WabaSubscription = {
 
 export function WhatsAppConfig() {
   const t = useTranslations('Settings.whatsapp');
+  const confirmDialog = useConfirm();
   const supabase = createClient();
   // After multi-user, whatsapp_config is one-row-per-account, not
   // one-row-per-user. We pull `accountId` straight off the auth
@@ -90,6 +94,12 @@ export function WhatsAppConfig() {
   const [statusMeta, setStatusMeta] = useState<MetaErrorMeta | null>(null);
   const [saveFailure, setSaveFailure] = useState<MetaFailure | null>(null);
   const [wabaSubscription, setWabaSubscription] = useState<WabaSubscription | null>(null);
+  // Number details from the live Meta check, for the status card.
+  const [phoneInfo, setPhoneInfo] = useState<{
+    display_phone_number?: string;
+    verified_name?: string;
+    quality_rating?: string;
+  } | null>(null);
   // Guards against re-hydrating the form when the load effect below
   // re-runs for reasons unrelated to actually switching accounts —
   // e.g. Supabase's onAuthStateChange fires a token refresh (new
@@ -200,6 +210,7 @@ export function WhatsAppConfig() {
             setStatusMessage('');
             setStatusMeta(null);
             setWabaSubscription(payload.waba_subscription ?? null);
+            setPhoneInfo(payload.phone_info ?? null);
           } else {
             setConnectionStatus('disconnected');
             setResetReason(payload.needs_reset ? 'token_corrupted' : payload.reason === 'meta_api_error' ? 'meta_api_error' : null);
@@ -400,6 +411,7 @@ export function WhatsAppConfig() {
         setStatusMessage('');
         setStatusMeta(null);
         setWabaSubscription(payload.waba_subscription ?? null);
+        setPhoneInfo(payload.phone_info ?? null);
         toast.success(
           payload.phone_info?.verified_name
             ? t('connectedTo', { name: payload.phone_info.verified_name })
@@ -449,7 +461,7 @@ export function WhatsAppConfig() {
   }
 
   async function handleReset() {
-    if (!confirm(t('resetConfirm'))) {
+    if (!(await confirmDialog({ title: t('resetConfirm'), confirmLabel: t('resetConfig') }))) {
       return;
     }
 
@@ -497,8 +509,12 @@ export function WhatsAppConfig() {
           title={t("title")}
           description={t("description")}
         />
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="size-6 animate-spin text-primary" />
+        <div className="space-y-4" aria-busy>
+          <Skeleton className="h-28 rounded-2xl" />
+          <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+            <Skeleton className="h-96 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
+          </div>
         </div>
       </section>
     );
@@ -545,26 +561,33 @@ export function WhatsAppConfig() {
         title={t("title")}
         description={t("description")}
       />
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+      <ConnectionCard
+        status={connectionStatus}
+        configured={!!config}
+        phone={phoneInfo}
+        webhookOk={wabaSubscription?.checked ? wabaSubscription.subscribed : null}
+      />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Main config form */}
       <div className="space-y-6">
         {/* Corrupted-token reset banner */}
         {showResetBanner && (
-          <Alert className="bg-amber-950/40 border-amber-600/40">
+          <Alert className="bg-warning/10 border-warning/40">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="size-5 text-amber-400 mt-0.5 shrink-0" />
+              <AlertTriangle className="size-5 text-warning mt-0.5 shrink-0" />
               <div className="flex-1">
-                <AlertTitle className="text-amber-200 mb-1">
+                <AlertTitle className="text-warning mb-1">
                   {t('tokenCorrupted')}
                 </AlertTitle>
-                <AlertDescription className="text-amber-100/80 text-sm">
+                <AlertDescription className="text-warning/80 text-sm">
                   {statusMessage}
                 </AlertDescription>
                 <Button
                   onClick={handleReset}
                   disabled={resetting}
                   size="sm"
-                  className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
+                  variant="outline"
+                  className="mt-3"
                 >
                   {resetting ? (
                     <>
@@ -585,12 +608,12 @@ export function WhatsAppConfig() {
 
         {/* Last save failed — why, which field, and what to quote to Meta */}
         {saveFailure && (
-          <Alert className="bg-red-950/30 border-red-700/50">
+          <Alert className="bg-danger/10 border-danger/50">
             <div className="flex items-start gap-3">
-              <XCircle className="size-5 text-red-400 mt-0.5 shrink-0" />
+              <XCircle className="size-5 text-danger mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
-                <AlertTitle className="text-red-200 mb-1">{t('lastSaveFailed')}</AlertTitle>
-                <AlertDescription className="text-red-100/80 text-sm">
+                <AlertTitle className="text-danger mb-1">{t('lastSaveFailed')}</AlertTitle>
+                <AlertDescription className="text-danger/80 text-sm">
                   {saveFailure.message}
                 </AlertDescription>
                 {saveFailure.meta && renderMetaDetails(saveFailure.meta)}
@@ -603,9 +626,9 @@ export function WhatsAppConfig() {
         <Alert className="bg-card border-border">
           <div className="flex items-center gap-2">
             {connectionStatus === 'connected' ? (
-              <CheckCircle2 className="size-4 text-primary" />
+              <CheckCircle2 className="size-4 text-muted-foreground" />
             ) : (
-              <XCircle className="size-4 text-red-500" />
+              <XCircle className="size-4 text-danger" />
             )}
             <AlertTitle className="text-foreground mb-0">
               {connectionStatus === 'connected' ? t('credentialsValid') : t('notConnected')}
@@ -622,7 +645,7 @@ export function WhatsAppConfig() {
               className={
                 'mt-1 text-xs ' +
                 (wabaSubscription.subscribed === false
-                  ? 'text-amber-300'
+                  ? 'text-warning'
                   : 'text-muted-foreground')
               }
             >
@@ -645,20 +668,20 @@ export function WhatsAppConfig() {
           <Alert
             className={
               isRegistered
-                ? 'bg-emerald-950/30 border-emerald-700/50'
-                : 'bg-amber-950/30 border-amber-700/50'
+                ? 'bg-success/10 border-success/50'
+                : 'bg-warning/10 border-warning/50'
             }
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 {isRegistered ? (
-                  <CheckCircle2 className="size-4 text-emerald-400" />
+                  <CheckCircle2 className="size-4 text-success" />
                 ) : (
-                  <AlertTriangle className="size-4 text-amber-400" />
+                  <AlertTriangle className="size-4 text-warning" />
                 )}
                 <AlertTitle
                   className={
-                    'mb-0 ' + (isRegistered ? 'text-emerald-200' : 'text-amber-200')
+                    'mb-0 ' + (isRegistered ? 'text-success' : 'text-warning')
                   }
                 >
                   {isRegistered
@@ -695,7 +718,7 @@ export function WhatsAppConfig() {
               ) : lastRegistrationError ? (
                 <>
                   {t('lastAttemptFailed')}
-                  <span className="text-red-300">
+                  <span className="text-danger">
                     &quot;{lastRegistrationError}&quot;
                   </span>
                   . {t('retryHint')}
@@ -709,7 +732,7 @@ export function WhatsAppConfig() {
               <div className="mt-3 rounded border border-border bg-card/60 px-3 py-2 space-y-1.5 text-[11px]">
                 <p className="font-medium text-foreground">
                   {t('diagnosticLastRun')}
-                  <span className={registrationProbe.live ? 'text-emerald-400' : 'text-amber-400'}>
+                  <span className={registrationProbe.live ? 'text-success' : 'text-warning'}>
                     {registrationProbe.live ? t('live') : t('notLive')}
                   </span>
                 </p>
@@ -717,9 +740,9 @@ export function WhatsAppConfig() {
                   {Object.entries(registrationProbe.checks).map(([k, v]) => (
                     <li key={k} className="flex items-center gap-1.5">
                       {v === true ? (
-                        <CheckCircle2 className="size-3 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="size-3 text-success shrink-0" />
                       ) : v === false ? (
-                        <XCircle className="size-3 text-red-400 shrink-0" />
+                        <XCircle className="size-3 text-danger shrink-0" />
                       ) : (
                         <span className="size-3 rounded-full border border-border shrink-0" />
                       )}
@@ -728,7 +751,7 @@ export function WhatsAppConfig() {
                   ))}
                 </ul>
                 {(registrationProbe.errors ?? []).length > 0 && (
-                  <ul className="pt-1 space-y-0.5 text-red-300">
+                  <ul className="pt-1 space-y-0.5 text-danger">
                     {registrationProbe.errors?.map((e, i) => (
                       <li key={i}>• {e}</li>
                     ))}
@@ -840,7 +863,7 @@ export function WhatsAppConfig() {
                 onChange={(e) =>
                   setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
                 }
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest"
+                className="bg-muted border-border text-foreground placeholder:text-muted-foreground "
               />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 <span dangerouslySetInnerHTML={{ __html: t('pinHint') }} />
@@ -900,7 +923,7 @@ export function WhatsAppConfig() {
                     {t('mirrorInboundDesc')}
                   </p>
                   {!mirrorMedia && (
-                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                    <p className="mt-1 text-xs text-warning dark:text-warning">
                       {t('mirrorInboundOffWarning')}
                     </p>
                   )}
@@ -955,7 +978,7 @@ export function WhatsAppConfig() {
               variant="outline"
               onClick={handleReset}
               disabled={resetting}
-              className="border-red-900 text-red-400 hover:text-red-300 hover:bg-red-950/40"
+              className="border-danger/40 text-danger hover:text-danger hover:bg-danger/10"
             >
               {resetting ? (
                 <>
@@ -987,7 +1010,7 @@ export function WhatsAppConfig() {
               <AccordionItem className="border-border">
                 <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
                   <span className="flex items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span>
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">1</span>
                     {t('step1')}
                   </span>
                 </AccordionTrigger>
@@ -1004,7 +1027,7 @@ export function WhatsAppConfig() {
               <AccordionItem className="border-border">
                 <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
                   <span className="flex items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">2</span>
                     {t('step2')}
                   </span>
                 </AccordionTrigger>
@@ -1020,7 +1043,7 @@ export function WhatsAppConfig() {
               <AccordionItem className="border-border">
                 <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
                   <span className="flex items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">3</span>
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">3</span>
                     {t('step3')}
                   </span>
                 </AccordionTrigger>
@@ -1037,7 +1060,7 @@ export function WhatsAppConfig() {
               <AccordionItem className="border-border">
                 <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
                   <span className="flex items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">4</span>
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">4</span>
                     {t('step4')}
                   </span>
                 </AccordionTrigger>
@@ -1069,5 +1092,71 @@ export function WhatsAppConfig() {
       </div>
     </div>
     </section>
+  );
+}
+
+/**
+ * At-a-glance connection card: status, number + verified name, Meta
+ * quality rating and webhook (WABA subscription) health. Messaging-limit
+ * tier isn't part of the phone fields the API reads today, so it isn't
+ * shown rather than guessed.
+ */
+function ConnectionCard({
+  status,
+  configured,
+  phone,
+  webhookOk,
+}: {
+  status: ConnectionStatus;
+  configured: boolean;
+  phone: { display_phone_number?: string; verified_name?: string; quality_rating?: string } | null;
+  webhookOk: boolean | null;
+}) {
+  const t = useTranslations('Settings.whatsapp.card');
+  const connected = status === 'connected';
+  const tone = !configured ? '' : connected ? 'tile-success' : 'tile-danger';
+  const quality = phone?.quality_rating?.toUpperCase();
+  const qualityTile =
+    quality === 'GREEN' ? 'tile-success' : quality === 'YELLOW' ? 'tile-warning' : quality === 'RED' ? 'tile-danger' : '';
+
+  return (
+    <div className={`${tone} surface relative flex flex-wrap items-center gap-4 overflow-hidden p-5`}>
+      <span aria-hidden className="bg-tile absolute inset-y-0 left-0 w-1" />
+      <span className="icon-tile size-12 rounded-2xl">
+        {connected ? <Wifi className="size-6" /> : <WifiOff className="size-6" />}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-lg font-semibold text-foreground">
+          <span className="relative flex size-2.5">
+            {connected ? (
+              <span className="bg-tile absolute inline-flex size-full hidden rounded-full opacity-60" />
+            ) : null}
+            <span className="bg-tile relative inline-flex size-2.5 rounded-full" />
+          </span>
+          {!configured ? t('notConnected') : connected ? t('connected') : t('disconnected')}
+        </p>
+        <p className="truncate text-sm text-muted-foreground">
+          {phone?.display_phone_number
+            ? [phone.display_phone_number, phone.verified_name].filter(Boolean).join(' · ')
+            : configured
+              ? t('checking')
+              : t('connectHint')}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {quality ? (
+          <span className={`${qualityTile} inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-muted px-2.5 py-1 text-xs font-semibold text-foreground`}>
+            <span className="bg-tile size-2 rounded-full" />
+            {t('quality', { rating: t(`qualityLevels.${quality === 'GREEN' || quality === 'YELLOW' || quality === 'RED' ? quality : 'UNKNOWN'}`) })}
+          </span>
+        ) : null}
+        {webhookOk !== null && connected ? (
+          <span className={`${webhookOk ? 'tile-success' : 'tile-warning'} inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-muted px-2.5 py-1 text-xs font-semibold text-foreground`}>
+            <span className="bg-tile size-2 rounded-full" />
+            {webhookOk ? t('webhookOk') : t('webhookIssue')}
+          </span>
+        ) : null}
+      </div>
+    </div>
   );
 }

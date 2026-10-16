@@ -30,9 +30,9 @@ describe("getBroadcastStatus", () => {
     // token-backed names without a shade number (bg-primary/10) since
     // the brand-accent statuses now ride the active color theme.
     for (const v of Object.values(broadcastStatusConfig)) {
-      expect(v.classes).toMatch(/bg-[a-z]+(-\d+)?\/10/);
-      expect(v.classes).toMatch(/text-[a-z]+(-\d+)?/);
-      expect(v.classes).toMatch(/border-[a-z]+(-\d+)?\/20/);
+      expect(v.classes).toMatch(/bg-[a-z][a-z-]*(-\d+)?\/10/);
+      expect(v.classes).toMatch(/text-[a-z][a-z-]*(-\d+)?/);
+      expect(v.classes).toMatch(/border-[a-z][a-z-]*(-\d+)?\/20/);
     }
   });
 });

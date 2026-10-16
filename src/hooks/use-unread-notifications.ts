@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Notification } from "@/types";
 
@@ -13,6 +13,10 @@ import type { Notification } from "@/types";
  * `useTotalUnread` for conversations.
  */
 export function useUnreadNotifications(): number {
+  // Unique per hook instance: several components use this hook at once,
+  // and Supabase returns the already-subscribed channel for a reused
+  // name — adding .on() to it then throws.
+  const instance = useId();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -31,7 +35,7 @@ export function useUnreadNotifications(): number {
     })();
 
     const channel = supabase
-      .channel("notifications-unread-count")
+      .channel(`notifications-unread-count-${instance}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications" },
@@ -57,7 +61,7 @@ export function useUnreadNotifications(): number {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [instance]);
 
   return count;
 }

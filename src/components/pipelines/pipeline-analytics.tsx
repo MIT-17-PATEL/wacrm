@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { Deal, PipelineStage } from "@/types";
 import {
-  DollarSign,
+  Wallet,
   TrendingUp,
   Target,
   BarChart3,
@@ -31,7 +31,7 @@ interface PipelineAnalyticsProps {
  * First stage ≈ 10%, stages interpolate up to 90% before the final stage,
  * final stage (Won) = 100%. Lost deals excluded.
  */
-function computeStageProbability(
+export function computeStageProbability(
   stage: PipelineStage,
   sortedStages: PipelineStage[],
 ): number {
@@ -95,46 +95,55 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
 
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card/60 p-4 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <Metric
-          icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+          icon={BarChart3}
+          tile=""
           label={t("totalDeals")}
           value={String(stats.totalCount)}
           tooltip={t("totalDealsTooltip")}
           t={t}
         />
         <Metric
-          icon={<DollarSign className="h-4 w-4 text-primary" />}
+          icon={Wallet}
+          tile=""
           label={t("pipelineValue")}
           value={formatCurrency(stats.totalValue, defaultCurrency)}
+          valueClassName="text-foreground"
           tooltip={t("pipelineValueTooltip")}
           t={t}
         />
         <Metric
-          icon={<Target className="h-4 w-4 text-blue-400" />}
+          icon={Target}
+          tile="tile-info"
           label={t("avgDealSize")}
           value={formatCurrency(stats.avgValue, defaultCurrency)}
           tooltip={t("avgDealSizeTooltip")}
           t={t}
         />
         <Metric
-          icon={<TrendingUp className="h-4 w-4 text-purple-400" />}
+          icon={TrendingUp}
+          tile=""
           label={t("weightedValue")}
           value={formatCurrency(stats.weightedValue, defaultCurrency)}
           tooltip={t("weightedValueTooltip")}
           t={t}
         />
         <Metric
-          icon={<Trophy className="h-4 w-4 text-primary" />}
+          icon={Trophy}
+          tile="tile-success"
           label={t("wonThisMonth")}
           value={String(stats.wonThisMonth)}
+          valueClassName="text-success"
           tooltip={t("wonThisMonthTooltip")}
           t={t}
         />
         <Metric
-          icon={<XCircle className="h-4 w-4 text-red-400" />}
+          icon={XCircle}
+          tile="tile-danger"
           label={t("lostThisMonth")}
           value={String(stats.lostThisMonth)}
+          valueClassName="text-danger"
           tooltip={t("lostThisMonthTooltip")}
           t={t}
         />
@@ -144,42 +153,55 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
 }
 
 function Metric({
-  icon,
+  icon: Icon,
+  tile,
   label,
   value,
+  valueClassName,
   tooltip,
   t,
 }: {
-  icon: React.ReactNode;
+  icon: React.ComponentType<{ className?: string }>;
+  /** `tile-<accent>` class for the icon tile. */
+  tile: string;
   label: string;
   value: string;
+  valueClassName?: string;
   tooltip: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
 }) {
   return (
-    <div className="rounded-lg bg-muted/50 p-3">
-      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        {icon}
-        <span>{label}</span>
+    <div className={`${tile} surface surface-hover p-4`}>
+      <div className="flex items-center gap-2">
+        <span className="icon-tile size-8 rounded-lg">
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+          {label}
+        </span>
         <Tooltip>
           <TooltipTrigger
             render={
               <button
                 type="button"
                 aria-label={t("howCalculated", { label })}
-                className="ml-auto text-muted-foreground hover:text-foreground focus:outline-none"
+                className="rounded text-muted-foreground hover:text-foreground"
               />
             }
           >
-            <Info className="h-3 w-3" />
+            <Info className="h-3.5 w-3.5" />
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs text-left">
             {tooltip}
           </TooltipContent>
         </Tooltip>
       </div>
-      <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
+      <p
+        className={`mt-2.5 truncate text-xl font-semibold tabular-nums ${valueClassName ?? "text-foreground"}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }

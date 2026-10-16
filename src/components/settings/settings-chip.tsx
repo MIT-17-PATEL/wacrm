@@ -6,18 +6,16 @@ import { cn } from '@/lib/utils';
  * Small status / role pill used across the settings redesign
  * (Overview tiles, WhatsApp banner, the "Active" appearance markers).
  *
- * Status colours (emerald = good, amber = attention) follow the same
- * Tailwind palette the members tab already uses for role chips — they
- * are semantic accents, not neutrals, so they're intentionally not
- * tokenized. Neutrals stay on design tokens.
+ * Colours come from the semantic design tokens (saffron = owner /
+ * attention, success = good), tuned per mode for contrast.
  */
 export type ChipVariant = 'owner' | 'admin' | 'ok' | 'warn' | 'muted';
 
 const VARIANTS: Record<ChipVariant, string> = {
-  owner: 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-300',
-  admin: 'border-primary-soft-2 bg-primary-soft text-primary',
-  ok: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300',
-  warn: 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-300',
+  owner: 'border-border bg-muted text-foreground',
+  admin: 'border-border-strong bg-accent text-primary',
+  ok: 'border-success/35 bg-success/12 text-success',
+  warn: 'border-warning/40 bg-warning/12 text-warning',
   muted: 'border-border bg-muted text-muted-foreground',
 };
 
@@ -48,7 +46,7 @@ export function StatusDot({
   tone = 'ok',
   className,
 }: {
-  tone?: 'ok' | 'muted';
+  tone?: 'ok' | 'bad' | 'muted';
   className?: string;
 }) {
   return (
@@ -56,7 +54,7 @@ export function StatusDot({
       aria-hidden
       className={cn(
         'inline-block size-1.5 shrink-0 rounded-full',
-        tone === 'ok' ? 'bg-emerald-500' : 'bg-muted-foreground',
+        tone === 'ok' ? 'bg-success' : tone === 'bad' ? 'bg-danger' : 'bg-muted-foreground',
         className,
       )}
     />

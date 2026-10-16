@@ -20,7 +20,9 @@ function useIsClient() {
 }
 
 /**
- * Toaster wrapper that tracks the active light/dark mode.
+ * Toaster wrapper that tracks the active light/dark mode. Bottom-right
+ * (lifted above the mobile tab bar), tinted per toast type from the
+ * semantic tokens.
  *
  * Lives inside <ThemeProvider> (see layout.tsx) so it can read the
  * current mode and hand it to sonner. Colors are driven off the same
@@ -38,12 +40,41 @@ export function ThemedToaster() {
   return (
     <Toaster
       theme={isClient ? mode : DEFAULT_MODE}
-      position="top-right"
+      position="bottom-right"
+      richColors
+      closeButton
+      offset={{ bottom: 88, right: 16 }}
+      mobileOffset={{ bottom: 88 }}
+      // sonner's own CSS variables, pointed at our design tokens.
+      style={
+        {
+          "--normal-bg": "var(--popover)",
+          "--normal-border": "var(--border-strong)",
+          "--normal-text": "var(--popover-foreground)",
+          "--success-bg": "color-mix(in oklab, var(--success) 12%, var(--popover))",
+          "--success-border": "color-mix(in oklab, var(--success) 35%, transparent)",
+          "--success-text": "var(--foreground)",
+          "--error-bg": "color-mix(in oklab, var(--danger) 12%, var(--popover))",
+          "--error-border": "color-mix(in oklab, var(--danger) 35%, transparent)",
+          "--error-text": "var(--foreground)",
+          "--warning-bg": "color-mix(in oklab, var(--warning) 12%, var(--popover))",
+          "--warning-border": "color-mix(in oklab, var(--warning) 35%, transparent)",
+          "--warning-text": "var(--foreground)",
+          "--info-bg": "color-mix(in oklab, var(--info) 12%, var(--popover))",
+          "--info-border": "color-mix(in oklab, var(--info) 35%, transparent)",
+          "--info-text": "var(--foreground)",
+          "--border-radius": "var(--radius-xl)",
+        } as React.CSSProperties
+      }
       toastOptions={{
-        style: {
-          background: "var(--popover)",
-          border: "1px solid var(--border)",
-          color: "var(--popover-foreground)",
+        classNames: {
+          toast: "!shadow-raised !font-sans !gap-3",
+          title: "!font-semibold",
+          description: "!text-muted-foreground",
+          success: "[&_[data-icon]]:!text-success",
+          error: "[&_[data-icon]]:!text-danger",
+          warning: "[&_[data-icon]]:!text-warning",
+          info: "[&_[data-icon]]:!text-info",
         },
       }}
     />

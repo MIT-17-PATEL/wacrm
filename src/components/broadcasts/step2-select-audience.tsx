@@ -270,15 +270,15 @@ export function Step2SelectAudience({
                 })
               }
               className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${
-                isSelected
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+ isSelected
+ ? 'border-primary bg-accent ring-1 ring-primary/30'
                   : 'border-border bg-card/50 hover:border-border'
               }`}
             >
               <div
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                  isSelected
-                    ? 'bg-primary/10 text-primary'
+ isSelected
+ ? 'bg-accent text-primary'
                     : 'bg-muted text-muted-foreground'
                 }`}
               >
@@ -299,7 +299,7 @@ export function Step2SelectAudience({
         <div className="rounded-xl border border-border bg-card/50 p-4">
           <p className="mb-3 text-sm font-medium text-foreground">{t('selectAudience.selectTags')}</p>
           {loadingTags ? (
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : tags.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               {t('selectAudience.noTagsFound')}
@@ -313,8 +313,8 @@ export function Step2SelectAudience({
                     key={tag.id}
                     onClick={() => toggleTag(tag.id)}
                     className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                      isSelected
-                        ? 'border-primary/30 bg-primary/10 text-primary'
+ isSelected
+ ? 'border-primary/30 bg-accent text-primary'
                         : 'border-border bg-muted text-muted-foreground hover:border-border'
                     }`}
                   >
@@ -335,7 +335,7 @@ export function Step2SelectAudience({
         <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">
           <p className="text-sm font-medium text-foreground">{t('selectAudience.method.customField')}</p>
           {loadingFields ? (
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : customFields.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               {t('selectAudience.errorLoadFields')}
@@ -427,7 +427,7 @@ export function Step2SelectAudience({
       {/* Exclude list — applies regardless of audience type */}
       <div className="rounded-xl border border-border bg-card/50 p-4">
         <div className="mb-3 flex items-center gap-2">
-          <X className="h-4 w-4 text-red-400" />
+          <X className="h-4 w-4 text-danger" />
           <p className="text-sm font-medium text-foreground">
             {t('selectAudience.excludeTags')}
           </p>
@@ -443,8 +443,8 @@ export function Step2SelectAudience({
                   key={tag.id}
                   onClick={() => toggleExcludeTag(tag.id)}
                   className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                    isExcluded
-                      ? 'border-red-500/30 bg-red-500/10 text-red-300'
+ isExcluded
+ ? 'border-danger/30 bg-danger/10 text-danger'
                       : 'border-border bg-muted text-muted-foreground hover:border-border'
                   }`}
                 >
@@ -465,12 +465,12 @@ export function Step2SelectAudience({
         <p className="mb-2 text-sm font-medium text-foreground">{t('selectAudience.audienceSummary')}</p>
         {loadingCount ? (
           <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{t('selectAudience.calculating')}</span>
           </div>
         ) : estimatedCount !== null ? (
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
+            <Users className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-foreground">
               {estimatedCount.toLocaleString()}
             </span>

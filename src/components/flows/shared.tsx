@@ -206,7 +206,7 @@ export interface NodeColors {
   soft: string;
   /** ~45% tint — hover border / focus ring. */
   ring: string;
-  /** Hue for the uppercase type label, kept readable in BOTH modes. */
+  /** Hue for the  type label, kept readable in BOTH modes. */
   text: string;
 }
 

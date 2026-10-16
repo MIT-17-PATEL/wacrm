@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   RAIL_GROUPS,
   SECTION_META,
+  SECTION_TILE,
   SETTINGS_SECTIONS,
   type SettingsSection,
 } from './settings-sections';
@@ -65,7 +66,7 @@ export function SettingsRail({
             className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5"
           >
             {label ? (
-              <div className="hidden px-3 pt-3.5 pb-1.5 text-[11px] font-semibold tracking-[0.09em] text-muted-foreground uppercase lg:block">
+              <div className="hidden px-3 pt-3.5 pb-1.5 text-[11px] font-semibold text-muted-foreground lg:block">
                 {t(`groups.${group}`)}
               </div>
             ) : null}
@@ -81,20 +82,23 @@ export function SettingsRail({
                   onClick={() => onSelect(s)}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors',
+                    SECTION_TILE[s],
+                    'flex shrink-0 items-center gap-2.5 rounded-xl px-2 py-1.5 text-left text-sm font-medium whitespace-nowrap transition-colors',
                     'lg:w-full',
                     isActive
-                      ? 'bg-primary-soft text-primary'
+                      ? 'bg-muted text-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
-                  <Icon className="size-4 shrink-0" />
+                  <span className="icon-tile size-7 rounded-lg">
+                    <Icon className="size-4 shrink-0" />
+                  </span>
                   <span className="flex-1">{t(`sections.${s}`)}</span>
                   {hints?.[s] != null ? (
                     <span
                       className={cn(
                         'hidden items-center gap-1.5 text-xs lg:inline-flex',
-                        isActive ? 'text-primary' : 'text-muted-foreground',
+                        isActive ? 'text-foreground/80' : 'text-muted-foreground',
                       )}
                     >
                       {hints[s]}

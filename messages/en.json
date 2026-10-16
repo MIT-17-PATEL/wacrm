@@ -17,7 +17,7 @@
     "linkInvalid": "That link couldn’t be used to sign you in. If you were confirming your email, it may already be verified — just sign in below. For a password reset, request a new link and open it in the same browser you requested it from."
   },
   "Sidebar": {
-    "title": "CRM Template for WhatsApp",
+    "title": "Neno Connect",
     "primaryNav": "Primary",
     "dashboard": "Dashboard",
     "inbox": "Inbox",
@@ -41,7 +41,8 @@
     "defaultAvatar": "Avatar",
     "menuProfile": "Profile",
     "menuSettings": "Settings",
-    "menuSignOut": "Sign out"
+    "menuSignOut": "Sign out",
+    "menuTeam": "Team members"
   },
   "Header": {
     "dashboard": "Dashboard",
@@ -74,23 +75,27 @@
     "page": {
       "title": "Dashboard",
       "description": "Live analytics across conversations, contacts, deals, broadcasts, and automations.",
-      "activeConversations": "Active Conversations",
-      "newContactsToday": "New Contacts Today",
-      "openDealsValue": "Open Deals Value",
-      "messagesSentToday": "Messages Sent Today",
+      "activeConversations": "Active conversations",
+      "newContactsToday": "New contacts today",
+      "openDealsValue": "Open deals value",
+      "messagesSentToday": "Messages sent today",
       "newTodayVsYesterday": "new today vs yesterday",
       "vsYesterday": "vs yesterday",
       "openDeals": "{count} open {count, plural, =1 {deal} other {deals}}",
       "noChange": "No change {suffix}"
     },
     "quickActions": {
-      "newContact": "New Contact",
-      "newDeal": "New Deal",
-      "newBroadcast": "New Broadcast",
-      "newAutomation": "New Automation"
+      "newContact": "New contact",
+      "newDeal": "New deal",
+      "newBroadcast": "New broadcast",
+      "newAutomation": "New automation",
+      "newContactHint": "Add someone to your list",
+      "newDealHint": "Track a new opportunity",
+      "newBroadcastHint": "Message many people at once",
+      "newAutomationHint": "Reply and follow up on autopilot"
     },
     "activityFeed": {
-      "title": "Recent Activity",
+      "title": "Recent activity",
       "viewAll": "View all →",
       "noActivity": "No activity yet",
       "noActivityHint": "Activity from messages, deals, broadcasts, and automations will appear here.",
@@ -122,7 +127,7 @@
       }
     },
     "conversationsChart": {
-      "title": "Conversations Over Time",
+      "title": "Conversations over time",
       "description": "Daily message volume by direction",
       "days": "{count} days",
       "noActivity": "No message activity in this range",
@@ -134,7 +139,7 @@
       "ariaLabel": "Conversations per day"
     },
     "pipelineDonut": {
-      "title": "Pipeline Value",
+      "title": "Pipeline value by stage",
       "description": "Open deals by stage",
       "noOpenDeals": "No open deals yet",
       "noOpenDealsHint": "Create deals in Pipelines to see stage breakdowns here.",
@@ -143,8 +148,8 @@
       "ariaLabel": "Pipeline value by stage"
     },
     "responseTimeChart": {
-      "title": "Average First Response Time",
-      "description": "Minutes to reply to a customer's first unreplied message, by weekday",
+      "title": "Average first response time",
+      "description": "Minutes to reply to a new customer message, by weekday",
       "target": "target {minutes}m",
       "thisWeek": "This week:",
       "lastWeek": "Last week:",
@@ -154,6 +159,29 @@
     },
     "emptyState": {
       "title": "Not enough data yet"
+    },
+    "greeting": {
+      "morning": "Good morning, {name}",
+      "afternoon": "Good afternoon, {name}",
+      "evening": "Good evening, {name}",
+      "morningNoName": "Good morning",
+      "afternoonNoName": "Good afternoon",
+      "eveningNoName": "Good evening",
+      "summary": "{chats, plural, =0 {No chats waiting} =1 {1 chat waiting} other {# chats waiting}} · {deals, plural, =0 {no open deals} =1 {1 deal moving} other {# deals moving}}",
+      "summaryChats": "{chats, plural, =0 {No chats waiting} =1 {1 chat waiting} other {# chats waiting}}"
+    },
+    "gettingStarted": {
+      "title": "Let's get you set up",
+      "subtitle": "Five quick steps and your team is ready to sell on WhatsApp.",
+      "progress": "{done} of {total} steps done",
+      "step": "Step {n}",
+      "steps": {
+        "whatsapp": "Connect WhatsApp",
+        "contacts": "Import contacts",
+        "template": "Create a template",
+        "automation": "Create an automation",
+        "agent": "Test your AI agent"
+      }
     }
   },
   "Inbox": {
@@ -161,7 +189,7 @@
       "whatsappNotConnected": "WhatsApp® is not connected. Go to Settings to connect your account."
     },
     "conversationList": {
-      "searchPlaceholder": "Search conversations...",
+      "searchPlaceholder": "Search name, phone or message…",
       "filterAll": "All",
       "filterUnread": "Unread",
       "filterOpen": "Open",
@@ -171,9 +199,19 @@
       "company": "Company",
       "allCompanies": "All companies",
       "clearAll": "Clear all",
-      "noConversations": "No conversations found",
+      "noConversations": "No conversations yet",
       "noMessagesYet": "No messages yet",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "noMatches": "No chats match these filters",
+      "filterLabel": "Filter conversations",
+      "status_open": "Open",
+      "status_pending": "Pending",
+      "status_closed": "Closed",
+      "assignedTo": "Assigned to {name}",
+      "windowHours": "{hours}h left",
+      "windowMinutes": "{minutes}m left",
+      "windowClosed": "Window closed",
+      "windowTitle": "Time left to reply freely in WhatsApp's 24-hour window"
     },
     "messageThread": {
       "backToConversations": "Back to conversations",
@@ -194,8 +232,8 @@
       "me": " (me)",
       "noMessagesYet": "No messages yet",
       "sendTemplateHint": "Send a template to start the conversation",
-      "selectConversation": "Select a conversation",
-      "selectConversationHint": "Choose a conversation from the left to start messaging",
+      "selectConversation": "Pick a chat to start replying",
+      "selectConversationHint": "Your customer conversations show up on the left.",
       "today": "Today",
       "yesterday": "Yesterday",
       "customer": "Customer",
@@ -207,7 +245,13 @@
       "assignmentUpdateFailed": "Failed to update assignment",
       "networkError": "network error",
       "documentFallback": "Document",
-      "you": "You"
+      "you": "You",
+      "emptyTitle": "No conversations yet",
+      "emptyHint": "Connect your WhatsApp number to start receiving customer messages, or reach out first with a broadcast.",
+      "connectWhatsApp": "Connect WhatsApp",
+      "sendBroadcast": "Send a broadcast",
+      "windowOpen": "Reply window open",
+      "windowClosedLabel": "Reply window closed"
     },
     "sessionTimer": {
       "expired": "Expired",
@@ -216,7 +260,7 @@
       "noCustomerMessages": "No customer messages"
     },
     "composer": {
-      "draftHint": "Tap the ✨ to draft a reply with AI — you can edit it before sending",
+      "draftHint": "Use the AI button to draft a reply — you can edit it before sending",
       "sessionExpiredHint": "24-hour session expired. Use a template to re-engage.",
       "templates": "Templates",
       "readOnlyPlaceholder": "Read-only — viewers can browse but not reply",
@@ -258,7 +302,9 @@
         "document": "document",
         "audio": "audio"
       },
-      "uploadFailed": "Upload failed."
+      "uploadFailed": "Upload failed.",
+      "emoji": "Emoji",
+      "emojiPicker": "Pick an emoji"
     },
     "bubble": {
       "photo": "Photo",
@@ -355,12 +401,12 @@
   "Contacts": {
     "page": {
       "title": "Contacts",
-      "subtitle": "Manage your contact list. {count} total contacts.",
-      "subtitleZero": "Manage your contact list.",
+      "subtitle": "{count, plural, =1 {# contact} other {# contacts}} in your list",
+      "subtitleZero": "Everyone you talk to on WhatsApp, in one place.",
       "customFieldsBtn": "Custom fields",
       "selectAllOnPage": "Select all contacts on this page",
       "importBtn": "Import",
-      "addContactBtn": "Add Contact",
+      "addContactBtn": "Add contact",
       "searchPlaceholder": "Search by name, phone, or email...",
       "filterByTags": "Filter by tags",
       "clearAll": "Clear all",
@@ -377,28 +423,36 @@
         "createdAt": "Created"
       },
       "loading": "Loading contacts...",
-      "noContactsMatch": "No contacts match your filters.",
-      "noContactsYet": "No contacts yet.",
+      "noContactsMatch": "No contacts match your filters",
+      "noContactsYet": "No contacts yet",
       "addFirstContact": "Add your first contact",
       "unnamed": "Unnamed",
       "editAction": "Edit",
       "deleteAction": "Delete",
       "showingPagination": "Showing {start}-{end} of {total}",
       "pageCount": "Page {page} of {total}",
-      "deleteContactTitle": "Delete Contact",
+      "deleteContactTitle": "Delete this contact?",
       "deleteContactDesc": "Are you sure you want to delete {name}? This action cannot be undone.",
       "cancel": "Cancel",
       "deleteBtn": "Delete",
-      "deleteBulkTitle": "Delete Contacts",
-      "deleteBulkDesc": "Are you sure you want to delete {count} selected contacts? This action cannot be undone.",
+      "deleteBulkTitle": "Delete selected contacts?",
+      "deleteBulkDesc": "{count, plural, =1 {This contact} other {These # contacts}} will be deleted for good. This can't be undone.",
       "toastFailedLoad": "Failed to load contacts",
       "toastFailedDelete": "Failed to delete contact",
       "toastDeleted": "Contact deleted",
       "toastBulkFailedDelete": "Failed to delete contacts",
-      "toastBulkDeleted": "{count} contacts deleted",
+      "toastBulkDeleted": "{count, plural, =1 {# contact} other {# contacts}} deleted",
       "filterByTag": "Filter by {name}",
       "removeTagFilter": "Remove {name} filter",
-      "selectContact": "Select {name}"
+      "selectContact": "Select {name}",
+      "noContactsHint": "Add people one by one, or import a CSV to bring your whole list in at once.",
+      "saveView": "Save view",
+      "savedViews": "Saved views",
+      "viewSaved": "View saved",
+      "viewUntitled": "My view",
+      "removeView": "Remove view {name}",
+      "previousPage": "Previous page",
+      "nextPage": "Next page"
     },
     "form": {
       "addTitle": "Add Contact",
@@ -498,7 +552,8 @@
       "toastCustomFieldsFailed": "Failed to save custom fields",
       "toastTemplateSent": "Template \"{name}\" sent",
       "toastTemplateFailed": "Failed to send template: {reason}",
-      "networkError": "network error"
+      "networkError": "network error",
+      "openChat": "Open chat"
     },
     "importModal": {
       "title": "Import Contacts",
@@ -604,12 +659,19 @@
     },
     "board": {
       "dropDealHere": "Drop a deal here",
-      "addDeal": "Add Deal"
+      "addDeal": "Add Deal",
+      "emptyTitle": "Add your first deal",
+      "emptyHint": "Track every lead from first chat to closed — drag deals between stages as they move.",
+      "addFirstDeal": "Add your first deal",
+      "probabilityTitle": "Chance of winning at this stage"
     },
     "card": {
       "noContact": "No contact",
       "won": "Won",
-      "lost": "Lost"
+      "lost": "Lost",
+      "daysInStage": "{days, plural, =0 {Today} =1 {1 day} other {# days}}",
+      "daysInStageTitle": "Time in the current stage",
+      "probabilityTitle": "Chance of winning at this stage"
     },
     "form": {
       "editDeal": "Edit Deal",
@@ -712,7 +774,8 @@
       },
       "errorLoad": "Failed to load broadcasts",
       "broadcastInProgress": "Broadcast in progress",
-      "retry": "Retry"
+      "retry": "Retry",
+      "replied": "Replied"
     },
     "status": {
       "draft": "Draft",
@@ -790,7 +853,10 @@
       "toastNotLinked": "Your profile is not linked to an account.",
       "toastFailedDraft": "Failed to save draft: {error}",
       "toastDraftSaved": "Draft saved",
-      "broadcastFailed": "Broadcast failed"
+      "broadcastFailed": "Broadcast failed",
+      "previewTitle": "Live preview",
+      "previewSubtitle": "Business account",
+      "previewEmpty": "Pick a template to see how your message will look on WhatsApp."
     },
     "wizard": {
       "next": "Next",
@@ -924,7 +990,7 @@
     "list": {
       "title": "Automations",
       "subtitle": "Build workflows that react to WhatsApp® events automatically.",
-      "create": "Create Automation",
+      "create": "Create automation",
       "retry": "Retry",
       "templatesTitle": "Quick-start templates",
       "emptyTitle": "No automations yet",
@@ -939,7 +1005,7 @@
       "viewLogs": "View Logs",
       "delete": "Delete",
       "cancel": "Cancel",
-      "deleteTitle": "Delete automation",
+      "deleteTitle": "Delete this automation?",
       "deleteDesc": "This permanently removes {name} and its execution history. This cannot be undone.",
       "activeIndicator": "active",
       "openMenu": "Open menu",
@@ -952,7 +1018,11 @@
         "duplicateError": "Failed to duplicate",
         "deleteError": "Failed to delete"
       },
-      "loadFailed": "Failed to load automations"
+      "loadFailed": "Failed to load automations",
+      "useTemplate": "Use template",
+      "yourAutomations": "Your automations",
+      "moreSteps": "+{count} more",
+      "runsLabel": "{count, plural, =1 {run} other {runs}}"
     },
     "edit": {
       "loading": "Loading...",
@@ -1176,7 +1246,7 @@
       "loadError": "Couldn't load flows.",
       "createError": "Couldn't create flow.",
       "cloneError": "Clone failed",
-      "deleteConfirm": "Delete \"{name}\"? Any active runs will end immediately.",
+      "deleteConfirm": "Delete the flow \"{name}\"? This can't be undone.",
       "deleteSuccess": "Flow deleted.",
       "deleteError": "Couldn't delete flow.",
       "emptyTitle": "No flows yet",
@@ -1198,7 +1268,13 @@
       "triggerKeywordExact": "Triggers on exact match: {keywords}",
       "triggerFirstInbound": "Triggers on a contact's first-ever inbound message",
       "triggerManual": "Manual trigger",
-      "cloneFailedStatus": "Clone failed: {status}"
+      "cloneFailedStatus": "Clone failed: {status}",
+      "toggleError": "Couldn't change the flow's status",
+      "activated": "Flow is live",
+      "paused": "Flow paused",
+      "pausedLabel": "Paused",
+      "pause": "Pause flow",
+      "activate": "Activate flow"
     },
     "edit": {
       "notFound": "Flow not found.",
@@ -1447,7 +1523,10 @@
       "fieldsCount": "{count} custom {count, plural, =1 {field} other {fields}}",
       "appearance": "{mode} mode · {theme} accent",
       "yourAccount": "Your account",
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "connectedNumber": "Connected · {phone}",
+      "noTemplates": "No templates yet",
+      "approvedTemplates": "{count, plural, =1 {# approved template} other {# approved templates}}"
     },
     "members": {
       "title": "Team members",
@@ -1498,7 +1577,7 @@
       "done": "Done",
       "dialogTitle": "Invite a teammate",
       "networkError": "Could not reach the server. Try again?",
-      "fallbackAccountName": "our wacrm account",
+      "fallbackAccountName": "our Neno Connect account",
       "dialogDesc": "Generate a one-time invite link. Share it via WhatsApp, Slack, or any channel you like — no email service required.",
       "roleLabel": "Role",
       "validForLabel": "Link valid for",
@@ -1515,7 +1594,7 @@
       "labelTooLong": "Label must be {max} characters or fewer",
       "copied": "Invite link copied",
       "clipboardBlocked": "Clipboard blocked — copy the link manually",
-      "whatsappMessage": "Join {accountName} on wacrm using this link (valid for {expiresInDays} days): {url}",
+      "whatsappMessage": "Join {accountName} on Neno Connect using this link (valid for {expiresInDays} days): {url}",
       "createFailed": "Failed to create invitation"
     },
     "tagsAndFields": {
@@ -1635,8 +1714,8 @@
       "saveResubmit": "Save & Resubmit",
       "submitApproval": "Submit for Approval",
       "deleteDialogTitle": "Delete template?",
-      "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from wacrm. Active broadcasts using this template will start failing on their next send. This can't be undone.",
-      "deleteLocalDesc": "\"{name}\" will be deleted from wacrm. It was never submitted to Meta, so no remote cleanup is needed.",
+      "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from Neno Connect. Active broadcasts using this template will start failing on their next send. This can't be undone.",
+      "deleteLocalDesc": "\"{name}\" will be deleted from Neno Connect. It was never submitted to Meta, so no remote cleanup is needed.",
       "deleting": "Deleting…",
       "delete": "Delete",
       "toastLoadFailed": "Failed to load templates",
@@ -1688,7 +1767,7 @@
       "notConnected": "Not Connected",
       "connectedDesc": "Your access token authenticates with Meta. See Registration status below for whether webhooks are actually wired.",
       "notConnectedDesc": "Configure your Meta API credentials below to connect your WhatsApp Business account.",
-      "registered": "Registered — Meta will deliver events to wacrm",
+      "registered": "Registered — Meta will deliver events to Neno Connect",
       "notRegistered": "Not registered — Meta will not deliver events",
       "verifyWithMeta": "Verify with Meta",
       "subscribedSince": "Subscribed since {date}. Click Verify with Meta if events stop arriving.",
@@ -1713,7 +1792,7 @@
       "twoStepPin": "Two-step verification PIN",
       "optional": "(optional)",
       "pinPlaceholder": "6-digit PIN from Meta WhatsApp Manager",
-      "pinHint": "Needed only to wire inbound messages for a production number. Set it in Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification, then paste it here so wacrm can subscribe the number — otherwise Meta routes inbound events to whichever app last claimed it (the symptom that hits second numbers under a shared WABA). Meta test numbers have no PIN and are pre-registered — leave this blank for them. Leaving it blank also keeps an existing registration untouched.",
+      "pinHint": "Needed only to wire inbound messages for a production number. Set it in Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification, then paste it here so Neno Connect can subscribe the number — otherwise Meta routes inbound events to whichever app last claimed it (the symptom that hits second numbers under a shared WABA). Meta test numbers have no PIN and are pre-registered — leave this blank for them. Leaving it blank also keeps an existing registration untouched.",
       "webhookTitle": "Webhook Configuration",
       "webhookDesc": "Use this URL as your webhook callback in the Meta App Dashboard.",
       "webhookUrl": "Webhook Callback URL",
@@ -1781,7 +1860,23 @@
       "phoneNumberIdNotNumeric": "Phone Number ID must contain only digits. Copy the numeric id from Meta → WhatsApp → API Setup, not the phone number itself.",
       "wabaIdNotNumeric": "WhatsApp Business Account ID must contain only digits. Copy it from Meta → WhatsApp → API Setup.",
       "wabaSubscribed": "The WhatsApp Business Account is subscribed to this app — inbound webhooks can be delivered.",
-      "wabaNotSubscribed": "The WhatsApp Business Account is not subscribed to this app, so Meta will not deliver inbound webhooks. Re-enter the access token and save again to subscribe it."
+      "wabaNotSubscribed": "The WhatsApp Business Account is not subscribed to this app, so Meta will not deliver inbound webhooks. Re-enter the access token and save again to subscribe it.",
+      "card": {
+        "notConnected": "WhatsApp not connected",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "checking": "Checking your number with Meta…",
+        "connectHint": "Add your phone number ID and access token below to connect.",
+        "quality": "Quality: {rating}",
+        "qualityLevels": {
+          "GREEN": "High",
+          "YELLOW": "Medium",
+          "RED": "Low",
+          "UNKNOWN": "Unknown"
+        },
+        "webhookOk": "Webhook receiving",
+        "webhookIssue": "Webhook not subscribed"
+      }
     },
     "sections": {
       "overview": "Overview",
@@ -1945,7 +2040,7 @@
     },
     "aiConfig": {
       "title": "Agent setup",
-      "description": "Bring your own OpenAI, Anthropic, or OpenAI-compatible API key. wacrm calls the provider directly with your key — no per-seat AI fees, and your data stays yours. This powers AI-drafted replies in the inbox, the auto-reply bot, and the Playground.",
+      "description": "Bring your own OpenAI, Anthropic, or OpenAI-compatible API key. Neno Connect calls the provider directly with your key — no per-seat AI fees, and your data stays yours. This powers AI-drafted replies in the inbox, the auto-reply bot, and the Playground.",
       "adminOnlyConfig": "Only admins and owners can change the AI configuration.",
       "loadFailed": "Failed to load AI configuration",
       "providerAndKey": "Provider & key",
@@ -2046,7 +2141,7 @@
     "titleJoin": "Create account & join",
     "title": "Create account",
     "descJoin": "Verify your email, then accept the invitation to join your team.",
-    "desc": "Get started with CRM Template for WhatsApp",
+    "desc": "Get started with Neno Connect",
     "fullNameLabel": "Full name",
     "fullNamePlaceholder": "John Doe",
     "emailLabel": "Email",
@@ -2133,7 +2228,11 @@
     "retry": "Retry",
     "emptyTitle": "No notifications yet",
     "emptyDesc": "You'll see an alert here when someone assigns you a conversation.",
-    "unread": "Unread"
+    "unread": "Unread",
+    "caughtUpTitle": "You're all caught up",
+    "caughtUpDesc": "No unread notifications. Earlier ones are below.",
+    "today": "Today",
+    "earlier": "Earlier"
   },
   "Agents": {
     "title": "AI Agents",
@@ -2153,7 +2252,20 @@
       "placeholder": "Type a customer message…",
       "notConfigured": "No agent configured yet — finish Setup first.",
       "noReply": "Couldn't get a reply.",
-      "unreachable": "Couldn't reach the agent."
+      "unreachable": "Couldn't reach the agent.",
+      "send": "Send",
+      "startersTitle": "Try a question",
+      "startersHint": "Tap a starter to see how your agent answers customers.",
+      "starters": {
+        "properties": "What properties do you have?",
+        "price": "Price of 2BHK?",
+        "visit": "Can I book a site visit?",
+        "offers": "Any offers this month?"
+      },
+      "howTitle": "How the playground works",
+      "howKnowledge": "Replies use your persona, model and knowledge base — exactly like live chats.",
+      "howHandoff": "When the agent decides a human should take over, you'll see a handoff note on the reply.",
+      "howSafe": "Nothing here is sent to a real customer."
     },
     "usage": {
       "title": "Token usage",
@@ -2171,6 +2283,20 @@
       "byModel": "By model",
       "modelCalls": "{tokens} tok · {count, plural, =1 {# call} other {# calls}}",
       "partialWindow": "Showing a partial window — usage is high enough that only the most recent records are summarized here."
+    },
+    "status": {
+      "not_set_up": "Not set up",
+      "live": "Live",
+      "paused": "Paused"
+    },
+    "steps": {
+      "step": "Step {n}",
+      "apiKey": "API key",
+      "model": "Model",
+      "persona": "Persona & tone",
+      "knowledge": "Knowledge base",
+      "handoff": "Handoff rules",
+      "goLive": "Go live"
     }
   },
   "Interactive": {
@@ -2199,10 +2325,14 @@
     "defaultListButton": "Menu"
   },
   "DashboardShell": {
-    "loading": "Loading..."
+    "loading": "Loading your workspace…",
+    "skipToContent": "Skip to content"
   },
   "UiPrimitives": {
-    "close": "Close"
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete"
   },
   "GatedButton": {
     "readOnly": "Read-only — your role can't {action}",
@@ -2218,7 +2348,7 @@
     }
   },
   "Metadata": {
-    "description": "Self-hostable CRM template for WhatsApp."
+    "description": "The WhatsApp CRM for growing businesses — shared inbox, contacts, pipelines, broadcasts and automations."
   },
   "Currency": {
     "USD": "US Dollar",
@@ -2672,7 +2802,7 @@
       "wabaIdDigits": "WhatsApp Business Account ID must contain only digits — copy it from Meta → WhatsApp → API Setup.",
       "pinDigits": "PIN must be exactly 6 digits.",
       "validateFailed": "Failed to validate configuration",
-      "numberLinkedElsewhere": "This WhatsApp phone number is already linked to another account on this instance. Each phone number can only be connected to one wacrm user.",
+      "numberLinkedElsewhere": "This WhatsApp phone number is already linked to another account on this instance. Each phone number can only be connected to one Neno Connect user.",
       "encryptFailed": "Failed to encrypt token. Check that ENCRYPTION_KEY is a valid 64-character hex string in your environment variables.",
       "updateFailed": "Failed to update configuration",
       "saveFailed": "Failed to save configuration",
@@ -2727,5 +2857,80 @@
       "metaApiStatus": "Meta API error: {status}",
       "syncFailed": "Failed to sync templates"
     }
+  },
+  "Nav": {
+    "groups": {
+      "engage": "Engage",
+      "grow": "Grow",
+      "automate": "Automate"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "inbox": "Inbox",
+      "notifications": "Notifications",
+      "broadcasts": "Broadcasts",
+      "contacts": "Contacts",
+      "pipelines": "Pipelines",
+      "automations": "Automations",
+      "flows": "Flows",
+      "agents": "AI Agents",
+      "settings": "Settings"
+    },
+    "descriptions": {
+      "dashboard": "Your day at a glance",
+      "inbox": "Reply to customer chats",
+      "notifications": "Mentions, assignments and alerts",
+      "broadcasts": "Send a template to many contacts",
+      "contacts": "Everyone you talk to",
+      "pipelines": "Track deals stage by stage",
+      "automations": "Auto-reply, tag and follow up",
+      "flows": "Build guided chat journeys",
+      "agents": "Let AI answer common questions",
+      "settings": "WhatsApp, team, templates and more"
+    },
+    "sub": {
+      "newBroadcast": "New broadcast",
+      "broadcastReport": "Broadcast report",
+      "newAutomation": "New automation",
+      "editAutomation": "Edit automation",
+      "automationLogs": "Run history",
+      "flowEditor": "Flow editor",
+      "flowRuns": "Flow runs"
+    },
+    "beta": "Beta",
+    "breadcrumb": "Breadcrumb",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "workspace": "Workspace",
+    "mobileNav": "Main",
+    "more": "More",
+    "moreTitle": "All pages"
+  },
+  "CommandPalette": {
+    "trigger": "Search or jump to…",
+    "title": "Search",
+    "placeholder": "Search pages, contacts and chats…",
+    "pages": "Pages",
+    "conversations": "Conversations",
+    "contacts": "Contacts",
+    "actions": "Quick actions",
+    "searching": "Searching…",
+    "noResults": "No results for “{query}”",
+    "noPhone": "No phone number",
+    "toggleMode": "Switch to {mode} mode",
+    "newBroadcast": "Create a broadcast",
+    "newAutomation": "Create an automation",
+    "hintNavigate": "navigate",
+    "hintOpen": "open",
+    "hintClose": "close"
+  },
+  "WhatsAppStatus": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "notConfigured": "Not connected",
+    "checking": "Checking…",
+    "tooltipConnected": "WhatsApp is connected and receiving messages",
+    "tooltipDisconnected": "WhatsApp is disconnected — click to reconnect",
+    "tooltipNotConfigured": "Connect your WhatsApp number to start chatting"
   }
 }

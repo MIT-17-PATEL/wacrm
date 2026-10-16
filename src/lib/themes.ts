@@ -13,17 +13,13 @@
  *   2. Add an entry below. The order here drives the picker grid.
  */
 
-export const THEME_IDS = [
-  "violet",
-  "emerald",
-  "cobalt",
-  "amber",
-  "rose",
-] as const;
+// Accent options. A saved id no longer listed (older emerald / cobalt /
+// violet / amber choices) falls back to DEFAULT_THEME in the boot script.
+export const THEME_IDS = ["green", "blue", "graphite"] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
 
-export const DEFAULT_THEME: ThemeId = "violet";
+export const DEFAULT_THEME: ThemeId = "green";
 
 export const STORAGE_KEY = "wacrm.theme";
 
@@ -58,45 +54,16 @@ export interface ThemeMeta {
   name: string;
   tagline: string;
   /**
-   * Static swatch color for the picker chip. Hard-coded so the boot
-   * script / picker cards don't need a getComputedStyle round trip
-   * before the page settles. Must mirror `--primary` of the same
-   * theme in globals.css.
+   * Static swatch colour for the picker chip (the accent's dark-mode
+   * value). Must mirror --primary of the same theme in globals.css.
    */
   swatch: string;
 }
 
 export const THEMES: ReadonlyArray<ThemeMeta> = [
-  {
-    id: "violet",
-    name: "Violet",
-    tagline: "The default — confident, slightly playful.",
-    swatch: "oklch(0.526 0.247 293)",
-  },
-  {
-    id: "emerald",
-    name: "Emerald",
-    tagline: "Growth-coded, nods at messaging without copying WhatsApp green.",
-    swatch: "oklch(0.62 0.16 162)",
-  },
-  {
-    id: "cobalt",
-    name: "Cobalt",
-    tagline: "Clean B2B-SaaS blue — calm and product-y.",
-    swatch: "oklch(0.585 0.2 254)",
-  },
-  {
-    id: "amber",
-    name: "Amber",
-    tagline: "Warm and friendly — feels good for SMB teams.",
-    swatch: "oklch(0.745 0.16 65)",
-  },
-  {
-    id: "rose",
-    name: "Rose",
-    tagline: "Bold and modern — D2C, creator-economy, lifestyle.",
-    swatch: "oklch(0.645 0.22 16)",
-  },
+  { id: "green", name: "Green", tagline: "The Neno default.", swatch: "#2f9e6e" },
+  { id: "blue", name: "Blue", tagline: "Calm and familiar.", swatch: "#5b8def" },
+  { id: "graphite", name: "Graphite", tagline: "No colour at all — just contrast.", swatch: "#71717a" },
 ];
 
 export function isThemeId(value: unknown): value is ThemeId {

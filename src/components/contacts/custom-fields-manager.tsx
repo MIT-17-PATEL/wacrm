@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface CustomFieldsManagerProps {
   open: boolean;
@@ -56,6 +57,7 @@ export function CustomFieldsManager({
  */
 export function CustomFieldsPanel() {
   const t = useTranslations('Contacts.customFields');
+  const confirmDialog = useConfirm();
   const supabase = createClient();
   const { user, accountId } = useAuth();
 
@@ -152,9 +154,9 @@ export function CustomFieldsPanel() {
 
   async function handleDelete(field: CustomField) {
     if (
-      !window.confirm(
-        t('deleteConfirm', { name: field.field_name })
-      )
+      !(await confirmDialog({
+        title: t('deleteConfirm', { name: field.field_name }),
+      }))
     ) {
       return;
     }
@@ -275,7 +277,7 @@ function FieldRow({
         disabled={busy}
         onClick={() => onDelete(field)}
         title={t('deleteTitle')}
-        className="shrink-0 text-muted-foreground hover:text-red-400"
+        className="shrink-0 text-muted-foreground hover:text-danger"
       >
         {busy ? (
           <Loader2 className="size-4 animate-spin" />

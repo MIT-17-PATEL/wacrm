@@ -167,13 +167,13 @@ export function InteractiveBuilder({
           </label>
 
           {!validation.ok && (
-            <p className="text-xs text-red-400">{validation.error}</p>
+            <p className="text-xs text-danger">{validation.error}</p>
           )}
         </div>
 
         {showPreview && (
           <div className="flex shrink-0 flex-col gap-1.5 @2xl:w-[280px]">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="text-[11px] font-medium text-muted-foreground">
               {t("preview")}
             </span>
             <div className="rounded-lg bg-muted/40 p-3">
@@ -258,7 +258,7 @@ function ButtonsEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => remove(i)}
-                className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                className="text-danger hover:bg-danger/10 hover:text-danger"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -368,7 +368,7 @@ function ListEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => removeSection(sIdx)}
-                className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                className="text-danger hover:bg-danger/10 hover:text-danger"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -403,7 +403,7 @@ function ListEditor({
                       variant="ghost"
                       size="sm"
                       onClick={() => removeRow(sIdx, rIdx)}
-                      className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                      className="text-danger hover:bg-danger/10 hover:text-danger"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -459,7 +459,7 @@ function KindButton({
       className={cn(
         "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-accent text-primary"
           : "border-border bg-muted text-muted-foreground hover:text-foreground",
       )}
     >

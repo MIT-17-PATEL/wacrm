@@ -1,35 +1,38 @@
 "use client";
 
 import type { Deal, PipelineStage } from "@/types";
-import { Calendar, Check, X } from "lucide-react";
+import { Calendar } from "lucide-react";
+import { useFormatter, useNow, useTranslations } from "next-intl";
+
+import { ContactAvatar } from "@/components/ui/contact-avatar";
+import { useAuth } from "@/hooks/use-auth";
 import { formatCurrency } from "@/lib/currency";
-import { useTranslations } from "next-intl";
+import { cn } from "@/lib/utils";
 
 interface DealCardProps {
   deal: Deal;
   stage: PipelineStage | null;
   onEdit: (deal: Deal) => void;
   isOverlay?: boolean;
+  /** 0–1 stage-based win probability (see pipeline-analytics). */
+  probability?: number;
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+const DAY = 86_400_000;
 
-function initials(name?: string, fallback?: string) {
-  const source = (name || fallback || "?").trim();
-  if (!source) return "?";
-  return source.charAt(0).toUpperCase();
-}
-
-export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
+export function DealCard({ deal, onEdit, isOverlay, probability }: DealCardProps) {
   const t = useTranslations("Pipelines.card");
+  const format = useFormatter();
+  const { defaultCurrency } = useAuth();
+  // Re-renders hourly so "days in stage" stays honest on a long-open tab.
+  const now = useNow({ updateInterval: 60 * 60 * 1000 });
   const contactLabel = deal.contact?.name || deal.contact?.phone || t("noContact");
   const assigneeLabel = deal.assignee?.full_name || null;
+  // Moving a deal between stages bumps updated_at, so this is "days in
+  // the current stage" at most (other edits can only make it smaller).
+  const since = deal.updated_at ?? deal.created_at;
+  const days = Math.max(0, Math.floor((now.getTime() - new Date(since).getTime()) / DAY));
+  const pct = probability != null ? Math.round(probability * 100) : null;
 
   return (
     <button
@@ -41,67 +44,55 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
         e.stopPropagation();
         onEdit(deal);
       }}
-      className={`group relative w-full cursor-pointer rounded-xl border border-border/50 bg-muted/70 pl-4 pr-3 py-3 text-left shadow-sm transition-all ${
-        isOverlay
-          ? "shadow-xl"
-          : "hover:-translate-y-0.5 hover:border-border hover:bg-muted hover:shadow-lg"
-      }`}
+      className={cn(
+        "w-full cursor-pointer rounded-lg border border-border bg-background p-2.5 text-left transition-colors",
+        isOverlay ? "border-border-strong shadow-raised" : "hover:border-border-strong",
+      )}
     >
-      {/* 4px left accent bar using stage color */}
-      <span
-        aria-hidden
-        className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
-        style={{ backgroundColor: stage?.color ?? "#94a3b8" }}
-      />
-
       <div className="flex items-start justify-between gap-2">
-        <h4 className="flex-1 text-sm font-semibold leading-snug text-foreground break-words">
+        <h4 className="flex-1 text-[13px] leading-snug font-medium break-words text-foreground">
           {deal.title}
         </h4>
-        {deal.status === "won" && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
-            <Check className="h-3 w-3" />
-            {t("won")}
+        {deal.status === "won" || deal.status === "lost" ? (
+          <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+            <span
+              aria-hidden
+              className={cn("size-1.5 rounded-full", deal.status === "won" ? "bg-success" : "bg-danger")}
+            />
+            {deal.status === "won" ? t("won") : t("lost")}
           </span>
-        )}
-        {deal.status === "lost" && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-400">
-            <X className="h-3 w-3" />
-            {t("lost")}
-          </span>
-        )}
+        ) : null}
       </div>
 
-      {/* Contact row */}
-      <div className="mt-2 flex items-center gap-2">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-foreground">
-          {initials(deal.contact?.name, deal.contact?.phone)}
-        </span>
+      {/* Workspace currency — the setting in Settings → Deals & currency. */}
+      <p className="mt-1 text-[13px] text-foreground tabular-nums">
+        {formatCurrency(deal.value, defaultCurrency)}
+      </p>
+
+      <div className="mt-2 flex items-center gap-1.5">
+        <ContactAvatar name={contactLabel} src={deal.contact?.avatar_url} size="xs" className="size-5 text-[9px]" />
         <span className="truncate text-xs text-muted-foreground">{contactLabel}</span>
+        {assigneeLabel ? (
+          <span className="ml-auto" title={assigneeLabel}>
+            <ContactAvatar name={assigneeLabel} size="xs" className="size-5 text-[9px]" />
+          </span>
+        ) : null}
       </div>
 
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-sm font-bold text-primary">
-          {formatCurrency(deal.value, deal.currency)}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-faint tabular-nums">
+        <span title={t("daysInStageTitle")}>{t("daysInStage", { days })}</span>
         {deal.expected_close_date && (
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            {formatDate(deal.expected_close_date)}
+            {format.dateTime(new Date(deal.expected_close_date), { day: "numeric", month: "short" })}
           </span>
         )}
-      </div>
-
-      {assigneeLabel && (
-        <div className="mt-2 flex items-center justify-end">
-          <span
-            title={assigneeLabel}
-            className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary"
-          >
-            {initials(assigneeLabel)}
+        {pct != null && deal.status !== "won" && deal.status !== "lost" ? (
+          <span className="ml-auto" title={t("probabilityTitle")}>
+            {pct}%
           </span>
-        </div>
-      )}
+        ) : null}
+      </div>
     </button>
   );
 }

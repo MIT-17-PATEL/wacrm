@@ -1,16 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useState } from 'react'
+import { useFormatter, useTranslations } from 'next-intl'
+import { IndianRupee, MessagesSquare, Send, UserPlus, Wallet } from 'lucide-react'
+
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 import { formatCurrency } from '@/lib/currency'
-import {
-  MessageSquare,
-  UserPlus,
-  DollarSign,
-  Send,
-} from 'lucide-react'
-
+import { personalFirstName } from '@/lib/display-name'
 import {
   loadActivity,
   loadConversationsSeries,
@@ -26,15 +23,14 @@ import type {
   ResponseTimeSummary,
 } from '@/lib/dashboard/types'
 
-import { MetricCard } from '@/components/dashboard/metric-card'
+import { StatCard } from '@/components/ui/stat-card'
 import { SkeletonCard } from '@/components/dashboard/skeleton'
 import { QuickActions } from '@/components/dashboard/quick-actions'
+import { GettingStarted } from '@/components/dashboard/getting-started'
 import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
-
-import { useTranslations } from 'next-intl'
 
 type RangeDays = 7 | 30 | 90
 
@@ -121,85 +117,72 @@ export default function DashboardPage() {
     [series],
   )
 
+  const money = (n: number) => formatCurrency(n, defaultCurrency)
+
   return (
-    <div className="space-y-5">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+        <Greeting />
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metricsLoading || !metrics ? (
-          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} className="h-[104px]" />)
         ) : (
           <>
-            <MetricCard
-              title={t('activeConversations')}
-              value={metrics.activeConversations.current.toLocaleString()}
-              icon={MessageSquare}
-              delta={{
-                sign: metrics.activeConversations.previous,
-                label: deltaLabel(
-                  metrics.activeConversations.previous, 
-                  t('newTodayVsYesterday'), 
-                  t('noChange', { suffix: t('newTodayVsYesterday') })
-                ),
-              }}
+            <StatCard
+              label={t('activeConversations')}
+              value={metrics.activeConversations.current}
+              icon={MessagesSquare}
+              trend={trend(
+                metrics.activeConversations.previous,
+                t('newTodayVsYesterday'),
+                t('noChange', { suffix: t('newTodayVsYesterday') }),
+              )}
             />
-            <MetricCard
-              title={t('newContactsToday')}
-              value={metrics.newContactsToday.current.toLocaleString()}
+            <StatCard
+              label={t('newContactsToday')}
+              value={metrics.newContactsToday.current}
               icon={UserPlus}
-              delta={{
-                sign:
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
-                label: deltaLabel(
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
-                  t('vsYesterday'),
-                  t('noChange', { suffix: t('vsYesterday') })
-                ),
-              }}
+              trend={trend(
+                metrics.newContactsToday.current - metrics.newContactsToday.previous,
+                t('vsYesterday'),
+                t('noChange', { suffix: t('vsYesterday') }),
+              )}
             />
-            <MetricCard
-              title={t('openDealsValue')}
-              value={formatCurrency(metrics.openDealsValue, defaultCurrency)}
-              icon={DollarSign}
+            <StatCard
+              label={t('openDealsValue')}
+              value={metrics.openDealsValue}
+              format={money}
+              icon={defaultCurrency === 'INR' ? IndianRupee : Wallet}
               subtitle={t('openDeals', { count: metrics.openDealsCount })}
             />
-            <MetricCard
-              title={t('messagesSentToday')}
-              value={metrics.messagesSentToday.current.toLocaleString()}
+            <StatCard
+              label={t('messagesSentToday')}
+              value={metrics.messagesSentToday.current}
               icon={Send}
-              delta={{
-                sign:
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
-                label: deltaLabel(
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
-                  t('vsYesterday'),
-                  t('noChange', { suffix: t('vsYesterday') })
-                ),
-              }}
+              trend={trend(
+                metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
+                t('vsYesterday'),
+                t('noChange', { suffix: t('vsYesterday') }),
+              )}
             />
           </>
         )}
       </div>
 
-      {/* Quick actions */}
-      <QuickActions />
+      <div>
+        <GettingStarted />
+      </div>
+
+      <div>
+        <QuickActions />
+      </div>
 
       {/* Charts row */}
-      {/* items-stretch (the grid default) stretches the two columns to
-          match the tallest sibling; adding h-full on each wrapper and
-          on the inner panels makes both cards actually fill that
-          stretched height so their rounded borders line up. Without
-          this, the pipeline card rendered at its natural (shorter)
-          height while the line chart drove the row height. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="h-full lg:col-span-3">
+        <div className="h-full min-w-0 lg:col-span-3">
           <ConversationsChart
             series={series}
             loading={seriesLoading}
@@ -207,28 +190,58 @@ export default function DashboardPage() {
             onRangeChange={handleRangeChange}
           />
         </div>
-        <div className="h-full lg:col-span-2">
-          <PipelineDonut
-            data={pipeline}
-            loading={pipelineLoading}
-            currency={defaultCurrency}
-          />
+        <div className="h-full min-w-0 lg:col-span-2">
+          <PipelineDonut data={pipeline} loading={pipelineLoading} currency={defaultCurrency} />
         </div>
       </div>
 
-      {/* Response time */}
-      <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
-
-      {/* Activity feed */}
-      <ActivityFeed items={activity} loading={activityLoading} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="min-w-0">
+          <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
+        </div>
+        <div className="min-w-0">
+          <ActivityFeed items={activity} loading={activityLoading} />
+        </div>
+      </div>
     </div>
   )
 }
 
-// ------------------------------------------------------------
+/**
+ * Plain page header: "Good evening, Priya" + a muted date line.
+ * Uses the signed-in person's own name — never the workspace name.
+ */
+function Greeting() {
+  const t = useTranslations('Dashboard.greeting')
+  const format = useFormatter()
+  const { user, profile, account } = useAuth()
+  const [now] = useState(() => new Date())
 
-function deltaLabel(delta: number, suffix: string, noChangeLabel: string): string {
-  if (delta === 0) return noChangeLabel
+  const hour = now.getHours()
+  const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
+  const firstName = personalFirstName({
+    metadataName:
+      (user?.user_metadata?.full_name as string | undefined) ??
+      (user?.user_metadata?.name as string | undefined),
+    profileName: profile?.full_name,
+    workspaceName: account?.name,
+    email: profile?.email ?? user?.email,
+  })
+
+  return (
+    <header>
+      <h2 className="text-2xl leading-tight font-semibold text-foreground">
+        {firstName ? t(part, { name: firstName }) : t(`${part}NoName`)}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {format.dateTime(now, { weekday: 'long', day: 'numeric', month: 'long' })}
+      </p>
+    </header>
+  )
+}
+
+function trend(delta: number, suffix: string, noChangeLabel: string) {
+  if (delta === 0) return { sign: 0, label: noChangeLabel }
   const sign = delta > 0 ? '+' : ''
-  return `${sign}${delta.toLocaleString()} ${suffix}`
+  return { sign: delta, label: `${sign}${delta.toLocaleString()} ${suffix}` }
 }

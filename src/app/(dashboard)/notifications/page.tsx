@@ -6,7 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { Notification } from "@/types";
 import { Bell, CheckCheck, Loader2, UserPlus } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isToday } from "date-fns";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -21,7 +24,7 @@ const TYPE_ICON: Record<Notification["type"], typeof Bell> = {
 export default function NotificationsPage() {
   const t = useTranslations("Notifications");
   const router = useRouter();
-  const { accountId } = useAuth();
+  const { accountId, accountStatus } = useAuth();
   const [notifications, setNotifications] = useState<Notification[] | null>(
     null,
   );
@@ -29,7 +32,10 @@ export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
 
   const load = useCallback(async () => {
-    if (!accountId) return;
+    if (!accountId) {
+      if (accountStatus !== "loading") setNotifications([]);
+      return;
+    }
     const supabase = createClient();
     const { data, error: fetchErr } = await supabase
       .from("notifications")
@@ -42,7 +48,7 @@ export default function NotificationsPage() {
       return;
     }
     setNotifications((data ?? []) as Notification[]);
-  }, [accountId]);
+  }, [accountId, accountStatus]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -157,112 +163,114 @@ export default function NotificationsPage() {
 
   if (notifications === null) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="space-y-6" aria-busy>
+        <Skeleton className="h-14 w-72 rounded-2xl" />
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-2xl" style={{ opacity: 1 - i * 0.12 }} />
+          ))}
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("description")}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={unreadIds.length === 0 || markingAll}
-          onClick={markAllRead}
-        >
-          {markingAll ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <CheckCheck className="h-4 w-4" />
-          )}
-          {t("markAllRead")}
-        </Button>
-      </div>
+  const today = notifications.filter((n) => isToday(new Date(n.created_at)));
+  const earlier = notifications.filter((n) => !isToday(new Date(n.created_at)));
 
-      {notifications.length === 0 ? (
-        <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/40">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Bell className="h-6 w-6 text-primary" />
-          </div>
-          <p className="mt-3 text-sm font-medium text-foreground">
-            {t("emptyTitle")}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("emptyDesc")}
-          </p>
+  const renderItem = (n: Notification) => {
+    const Icon = TYPE_ICON[n.type] ?? Bell;
+    const isUnread = !n.read_at;
+    return (
+      <li key={n.id}>
+        <button
+          type="button"
+          onClick={() => handleClick(n)}
+          className={cn(
+            " group relative flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-colors",
+            isUnread
+              ? "border-border-strong bg-muted hover:bg-card-2"
+              : "border-border bg-card hover:bg-muted/40",
+          )}
+        >
+          {isUnread ? (
+            <span aria-hidden className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-tile" />
+          ) : null}
+          <span
+            className={cn("icon-tile size-10 rounded-xl", !isUnread && "grayscale opacity-70")}
+            aria-hidden
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "truncate text-sm",
+                  isUnread ? "font-semibold text-foreground" : "font-medium text-muted-foreground",
+                )}
+              >
+                {n.title}
+              </span>
+              {isUnread && (
+                <span aria-label={t("unread")} className="size-2 shrink-0 rounded-full bg-tile" />
+              )}
+            </span>
+            {n.body && (
+              <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">{n.body}</span>
+            )}
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+            </span>
+          </span>
+        </button>
+      </li>
+    );
+  };
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader
+        tile=""
+        icon={Bell}
+        title={t("title")}
+        description={t("description")}
+        actions={
+          <Button
+            variant="outline"
+            disabled={unreadIds.length === 0 || markingAll}
+            onClick={markAllRead}
+          >
+            {markingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCheck className="h-4 w-4" />}
+            {t("markAllRead")}
+          </Button>
+        }
+      />
+
+      {notifications.length === 0 || unreadIds.length === 0 ? (
+        <div className="surface ">
+          <EmptyState
+            illustration="celebrate"
+            title={t("caughtUpTitle")}
+            description={notifications.length === 0 ? t("emptyDesc") : t("caughtUpDesc")}
+          />
         </div>
-      ) : (
-        <ul className="space-y-2">
-          {notifications.map((n) => {
-            const Icon = TYPE_ICON[n.type] ?? Bell;
-            const isUnread = !n.read_at;
-            return (
-              <li key={n.id}>
-                <button
-                  type="button"
-                  onClick={() => handleClick(n)}
-                  className={cn(
-                    "flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors",
-                    isUnread
-                      ? "border-primary/30 bg-primary/5 hover:border-primary/50"
-                      : "border-border bg-card hover:border-border/70",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg",
-                      isUnread ? "bg-primary/15" : "bg-muted",
-                    )}
-                    aria-hidden
-                  >
-                    <Icon
-                      className={cn(
-                        "h-5 w-5",
-                        isUnread ? "text-primary" : "text-muted-foreground",
-                      )}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "truncate text-sm font-semibold",
-                          isUnread ? "text-foreground" : "text-muted-foreground",
-                        )}
-                      >
-                        {n.title}
-                      </span>
-                      {isUnread && (
-                        <span
-                          aria-label={t("unread")}
-                          className="h-2 w-2 flex-shrink-0 rounded-full bg-primary"
-                        />
-                      )}
-                    </div>
-                    {n.body && (
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {n.body}
-                      </p>
-                    )}
-                    <p className="mt-1 text-[11px] text-muted-foreground/70">
-                      {formatDistanceToNow(new Date(n.created_at), {
-                        addSuffix: true,
-                      })}
-                    </p>
-                  </div>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+      ) : null}
+
+      {[
+        { key: "today", items: today },
+        { key: "earlier", items: earlier },
+      ].map((group) =>
+        group.items.length ? (
+          <section key={group.key} aria-labelledby={`notif-${group.key}`}>
+            <h2
+              id={`notif-${group.key}`}
+              className="mb-2 text-[11px] font-semibold text-muted-foreground "
+            >
+              {t(group.key)}
+            </h2>
+            <ul className="space-y-2">{group.items.map(renderItem)}</ul>
+          </section>
+        ) : null,
       )}
     </div>
   );

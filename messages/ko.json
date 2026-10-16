@@ -17,7 +17,7 @@
     "linkInvalid": "이 링크로는 로그인할 수 없습니다. 이메일 인증 중이었다면 이미 인증이 완료되었을 수 있으니 아래에서 로그인하세요. 비밀번호 재설정은 새 링크를 요청한 뒤 요청한 브라우저에서 열어 주세요."
   },
   "Sidebar": {
-    "title": "WhatsApp용 CRM 템플릿",
+    "title": "Neno Connect",
     "primaryNav": "기본 메뉴",
     "dashboard": "대시보드",
     "inbox": "인박스",
@@ -41,7 +41,8 @@
     "defaultAvatar": "아바타",
     "menuProfile": "프로필",
     "menuSettings": "설정",
-    "menuSignOut": "로그아웃"
+    "menuSignOut": "로그아웃",
+    "menuTeam": "팀 멤버"
   },
   "Header": {
     "dashboard": "대시보드",
@@ -75,8 +76,8 @@
       "title": "대시보드",
       "description": "대화, 연락처, 딜, 브로드캐스트, 자동화 전반의 실시간 분석입니다.",
       "activeConversations": "진행 중인 대화",
-      "newContactsToday": "오늘의 신규 연락처",
-      "openDealsValue": "진행 중인 딜 금액",
+      "newContactsToday": "오늘 새 연락처",
+      "openDealsValue": "진행 중인 거래 금액",
       "messagesSentToday": "오늘 보낸 메시지",
       "newTodayVsYesterday": "어제 대비 신규",
       "vsYesterday": "어제 대비",
@@ -85,13 +86,17 @@
     },
     "quickActions": {
       "newContact": "새 연락처",
-      "newDeal": "새 딜",
+      "newDeal": "새 거래",
       "newBroadcast": "새 브로드캐스트",
-      "newAutomation": "새 자동화"
+      "newAutomation": "새 자동화",
+      "newContactHint": "목록에 사람 추가",
+      "newDealHint": "새 기회 추적",
+      "newBroadcastHint": "여러 명에게 한 번에 보내기",
+      "newAutomationHint": "자동으로 답장하고 후속 조치"
     },
     "activityFeed": {
       "title": "최근 활동",
-      "viewAll": "전체 보기 →",
+      "viewAll": "모두 보기 →",
       "noActivity": "아직 활동이 없습니다",
       "noActivityHint": "메시지, 딜, 브로드캐스트, 자동화 관련 활동이 여기에 표시됩니다.",
       "showingOf": "{totalLoaded}개 중 {visible}개 표시{plus}",
@@ -122,7 +127,7 @@
       }
     },
     "conversationsChart": {
-      "title": "기간별 대화 추이",
+      "title": "기간별 대화",
       "description": "방향별 일일 메시지 볼륨",
       "days": "{count}일",
       "noActivity": "이 기간에는 메시지 활동이 없습니다",
@@ -134,7 +139,7 @@
       "ariaLabel": "일별 대화 수"
     },
     "pipelineDonut": {
-      "title": "파이프라인 금액",
+      "title": "단계별 파이프라인 금액",
       "description": "단계별 진행 중인 딜",
       "noOpenDeals": "아직 진행 중인 딜이 없습니다",
       "noOpenDealsHint": "파이프라인에서 딜을 만들면 단계별 분포를 여기서 확인할 수 있습니다.",
@@ -144,7 +149,7 @@
     },
     "responseTimeChart": {
       "title": "평균 첫 응답 시간",
-      "description": "요일별, 고객의 첫 미응답 메시지에 답변하기까지 걸린 시간(분)",
+      "description": "새 고객 메시지에 답하기까지 걸린 시간(분), 요일별",
       "target": "목표 {minutes}분",
       "thisWeek": "이번 주:",
       "lastWeek": "지난 주:",
@@ -154,6 +159,29 @@
     },
     "emptyState": {
       "title": "아직 데이터가 충분하지 않습니다"
+    },
+    "greeting": {
+      "morning": "좋은 아침이에요, {name}님",
+      "afternoon": "좋은 오후예요, {name}님",
+      "evening": "좋은 저녁이에요, {name}님",
+      "morningNoName": "좋은 아침이에요",
+      "afternoonNoName": "좋은 오후예요",
+      "eveningNoName": "좋은 저녁이에요",
+      "summary": "대기 중인 채팅 {chats}개 · 진행 중인 거래 {deals}건",
+      "summaryChats": "대기 중인 채팅 {chats}개"
+    },
+    "gettingStarted": {
+      "title": "설정을 시작해 볼까요",
+      "subtitle": "다섯 단계만 마치면 팀이 WhatsApp으로 판매할 준비가 됩니다.",
+      "progress": "{total}단계 중 {done}단계 완료",
+      "step": "{n}단계",
+      "steps": {
+        "whatsapp": "WhatsApp 연결",
+        "contacts": "연락처 가져오기",
+        "template": "템플릿 만들기",
+        "automation": "자동화 만들기",
+        "agent": "AI 에이전트 테스트"
+      }
     }
   },
   "Inbox": {
@@ -161,7 +189,7 @@
       "whatsappNotConnected": "WhatsApp®이 연결되어 있지 않습니다. 설정으로 이동해 계정을 연결하세요."
     },
     "conversationList": {
-      "searchPlaceholder": "대화 검색...",
+      "searchPlaceholder": "이름, 전화번호, 메시지 검색…",
       "filterAll": "전체",
       "filterUnread": "읽지 않음",
       "filterOpen": "열림",
@@ -171,9 +199,19 @@
       "company": "회사",
       "allCompanies": "전체 회사",
       "clearAll": "모두 지우기",
-      "noConversations": "대화를 찾을 수 없습니다",
+      "noConversations": "아직 대화가 없습니다",
       "noMessagesYet": "아직 메시지가 없습니다",
-      "unknown": "알 수 없음"
+      "unknown": "알 수 없음",
+      "noMatches": "필터와 일치하는 채팅이 없습니다",
+      "filterLabel": "대화 필터",
+      "status_open": "열림",
+      "status_pending": "대기",
+      "status_closed": "종료",
+      "assignedTo": "{name}님에게 배정됨",
+      "windowHours": "{hours}시간 남음",
+      "windowMinutes": "{minutes}분 남음",
+      "windowClosed": "응답 가능 시간 종료",
+      "windowTitle": "WhatsApp 24시간 창에서 자유롭게 답장할 수 있는 남은 시간"
     },
     "messageThread": {
       "backToConversations": "대화 목록으로 돌아가기",
@@ -194,8 +232,8 @@
       "me": " (나)",
       "noMessagesYet": "아직 메시지가 없습니다",
       "sendTemplateHint": "템플릿을 보내 대화를 시작하세요",
-      "selectConversation": "대화를 선택하세요",
-      "selectConversationHint": "왼쪽에서 대화를 선택해 메시지를 시작하세요",
+      "selectConversation": "답장할 채팅을 선택하세요",
+      "selectConversationHint": "고객과의 대화가 왼쪽에 표시됩니다.",
       "today": "오늘",
       "yesterday": "어제",
       "customer": "고객",
@@ -207,7 +245,13 @@
       "assignmentUpdateFailed": "담당자 변경에 실패했습니다",
       "networkError": "네트워크 오류",
       "documentFallback": "문서",
-      "you": "나"
+      "you": "나",
+      "emptyTitle": "아직 대화가 없습니다",
+      "emptyHint": "WhatsApp 번호를 연결해 고객 메시지를 받거나, 브로드캐스트로 먼저 연락해 보세요.",
+      "connectWhatsApp": "WhatsApp 연결",
+      "sendBroadcast": "브로드캐스트 보내기",
+      "windowOpen": "답장 가능",
+      "windowClosedLabel": "답장 시간 종료"
     },
     "sessionTimer": {
       "expired": "만료됨",
@@ -216,7 +260,7 @@
       "noCustomerMessages": "고객 메시지 없음"
     },
     "composer": {
-      "draftHint": "✨를 눌러 AI로 답장 초안을 작성하세요 — 보내기 전에 수정할 수 있습니다",
+      "draftHint": "AI 버튼으로 답장 초안을 작성하세요 — 보내기 전에 수정할 수 있습니다",
       "sessionExpiredHint": "24시간 세션이 만료되었습니다. 다시 연결하려면 템플릿을 사용하세요.",
       "templates": "템플릿",
       "readOnlyPlaceholder": "읽기 전용 — 뷰어는 열람만 가능하고 답장할 수 없습니다",
@@ -258,7 +302,9 @@
         "document": "문서",
         "audio": "오디오"
       },
-      "uploadFailed": "업로드에 실패했습니다."
+      "uploadFailed": "업로드에 실패했습니다.",
+      "emoji": "이모지",
+      "emojiPicker": "이모지 선택"
     },
     "bubble": {
       "photo": "사진",
@@ -355,8 +401,8 @@
   "Contacts": {
     "page": {
       "title": "연락처",
-      "subtitle": "연락처 목록을 관리하세요. 전체 연락처 {count}개.",
-      "subtitleZero": "연락처 목록을 관리하세요.",
+      "subtitle": "목록에 연락처 {count}개",
+      "subtitleZero": "WhatsApp으로 대화하는 모든 사람을 한곳에서.",
       "customFieldsBtn": "커스텀 필드",
       "selectAllOnPage": "이 페이지의 모든 연락처 선택",
       "importBtn": "가져오기",
@@ -377,28 +423,36 @@
         "createdAt": "생성일"
       },
       "loading": "연락처를 불러오는 중...",
-      "noContactsMatch": "필터와 일치하는 연락처가 없습니다.",
-      "noContactsYet": "아직 연락처가 없습니다.",
+      "noContactsMatch": "필터와 일치하는 연락처가 없습니다",
+      "noContactsYet": "아직 연락처가 없습니다",
       "addFirstContact": "첫 연락처 추가하기",
       "unnamed": "이름 없음",
       "editAction": "수정",
       "deleteAction": "삭제",
       "showingPagination": "전체 {total}개 중 {start}-{end}",
       "pageCount": "{total} 중 {page}페이지",
-      "deleteContactTitle": "연락처 삭제",
+      "deleteContactTitle": "이 연락처를 삭제할까요?",
       "deleteContactDesc": "{name}을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
       "cancel": "취소",
       "deleteBtn": "삭제",
-      "deleteBulkTitle": "연락처 삭제",
-      "deleteBulkDesc": "선택한 연락처 {count}개를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+      "deleteBulkTitle": "선택한 연락처를 삭제할까요?",
+      "deleteBulkDesc": "연락처 {count}개가 영구적으로 삭제됩니다. 되돌릴 수 없습니다.",
       "toastFailedLoad": "연락처를 불러오지 못했습니다",
       "toastFailedDelete": "연락처를 삭제하지 못했습니다",
       "toastDeleted": "연락처가 삭제되었습니다",
       "toastBulkFailedDelete": "연락처를 삭제하지 못했습니다",
-      "toastBulkDeleted": "연락처 {count}개가 삭제되었습니다",
+      "toastBulkDeleted": "연락처 {count}개를 삭제했습니다",
       "filterByTag": "{name}(으)로 필터링",
       "removeTagFilter": "{name} 필터 제거",
-      "selectContact": "{name} 선택"
+      "selectContact": "{name} 선택",
+      "noContactsHint": "한 명씩 추가하거나 CSV를 가져와 목록 전체를 한 번에 옮기세요.",
+      "saveView": "보기 저장",
+      "savedViews": "저장된 보기",
+      "viewSaved": "보기를 저장했습니다",
+      "viewUntitled": "내 보기",
+      "removeView": "{name} 보기 삭제",
+      "previousPage": "이전 페이지",
+      "nextPage": "다음 페이지"
     },
     "form": {
       "addTitle": "연락처 추가",
@@ -498,7 +552,8 @@
       "toastCustomFieldsFailed": "커스텀 필드를 저장하지 못했습니다",
       "toastTemplateSent": "\"{name}\" 템플릿을 보냈습니다",
       "toastTemplateFailed": "템플릿을 보내지 못했습니다: {reason}",
-      "networkError": "네트워크 오류"
+      "networkError": "네트워크 오류",
+      "openChat": "채팅 열기"
     },
     "importModal": {
       "title": "연락처 가져오기",
@@ -604,12 +659,19 @@
     },
     "board": {
       "dropDealHere": "여기에 딜을 놓으세요",
-      "addDeal": "딜 추가"
+      "addDeal": "딜 추가",
+      "emptyTitle": "첫 거래를 추가하세요",
+      "emptyHint": "첫 채팅부터 성사까지 모든 리드를 추적하고, 진행에 따라 단계 사이로 끌어 옮기세요.",
+      "addFirstDeal": "첫 거래 추가",
+      "probabilityTitle": "이 단계에서의 성사 확률"
     },
     "card": {
       "noContact": "연락처 없음",
       "won": "성사",
-      "lost": "실패"
+      "lost": "실패",
+      "daysInStage": "{days}일",
+      "daysInStageTitle": "현재 단계에 머문 기간",
+      "probabilityTitle": "이 단계에서의 성사 확률"
     },
     "form": {
       "editDeal": "딜 수정",
@@ -712,7 +774,8 @@
       },
       "errorLoad": "브로드캐스트를 불러오지 못했습니다",
       "broadcastInProgress": "브로드캐스트 진행 중",
-      "retry": "다시 시도"
+      "retry": "다시 시도",
+      "replied": "답장함"
     },
     "status": {
       "draft": "초안",
@@ -790,7 +853,10 @@
       "toastNotLinked": "프로필이 계정에 연결되어 있지 않습니다.",
       "toastFailedDraft": "초안 저장 실패: {error}",
       "toastDraftSaved": "초안이 저장되었습니다",
-      "broadcastFailed": "브로드캐스트 실패"
+      "broadcastFailed": "브로드캐스트 실패",
+      "previewTitle": "실시간 미리보기",
+      "previewSubtitle": "비즈니스 계정",
+      "previewEmpty": "템플릿을 선택하면 WhatsApp에서 메시지가 어떻게 보일지 확인할 수 있습니다."
     },
     "wizard": {
       "next": "다음",
@@ -939,7 +1005,7 @@
       "viewLogs": "로그 보기",
       "delete": "삭제",
       "cancel": "취소",
-      "deleteTitle": "자동화 삭제",
+      "deleteTitle": "이 자동화를 삭제할까요?",
       "deleteDesc": "{name}과(와) 실행 기록이 영구적으로 삭제됩니다. 되돌릴 수 없습니다.",
       "activeIndicator": "활성",
       "openMenu": "메뉴 열기",
@@ -952,7 +1018,11 @@
         "duplicateError": "복제하지 못했습니다",
         "deleteError": "삭제하지 못했습니다"
       },
-      "loadFailed": "자동화를 불러오지 못했습니다"
+      "loadFailed": "자동화를 불러오지 못했습니다",
+      "useTemplate": "템플릿 사용",
+      "yourAutomations": "내 자동화",
+      "moreSteps": "+{count}개 더",
+      "runsLabel": "{count, plural, other {회 실행}}"
     },
     "edit": {
       "loading": "불러오는 중...",
@@ -1176,7 +1246,7 @@
       "loadError": "플로우를 불러올 수 없습니다.",
       "createError": "플로우를 만들 수 없습니다.",
       "cloneError": "복제 실패",
-      "deleteConfirm": "\"{name}\"을(를) 삭제하시겠습니까? 실행 중인 세션은 즉시 종료됩니다.",
+      "deleteConfirm": "\"{name}\" 플로우를 삭제할까요? 되돌릴 수 없습니다.",
       "deleteSuccess": "플로우가 삭제되었습니다.",
       "deleteError": "플로우를 삭제할 수 없습니다.",
       "emptyTitle": "아직 플로우가 없습니다",
@@ -1198,7 +1268,13 @@
       "triggerKeywordExact": "정확히 일치 시 트리거: {keywords}",
       "triggerFirstInbound": "연락처의 첫 수신 메시지에서 트리거됨",
       "triggerManual": "수동 트리거",
-      "cloneFailedStatus": "복제 실패: {status}"
+      "cloneFailedStatus": "복제 실패: {status}",
+      "toggleError": "플로우 상태를 변경하지 못했습니다",
+      "activated": "플로우가 활성화되었습니다",
+      "paused": "플로우를 일시중지했습니다",
+      "pausedLabel": "일시중지",
+      "pause": "플로우 일시중지",
+      "activate": "플로우 활성화"
     },
     "edit": {
       "notFound": "플로우를 찾을 수 없습니다.",
@@ -1447,7 +1523,10 @@
       "fieldsCount": "커스텀 필드 {count}개",
       "appearance": "{mode} 모드 · {theme} 색상",
       "yourAccount": "내 계정",
-      "loading": "불러오는 중…"
+      "loading": "불러오는 중…",
+      "connectedNumber": "연결됨 · {phone}",
+      "noTemplates": "아직 템플릿이 없습니다",
+      "approvedTemplates": "승인된 템플릿 {count}개"
     },
     "members": {
       "title": "팀원",
@@ -1498,7 +1577,7 @@
       "done": "완료",
       "dialogTitle": "팀원 초대",
       "networkError": "서버에 연결할 수 없습니다. 다시 시도할까요?",
-      "fallbackAccountName": "우리 wacrm 계정",
+      "fallbackAccountName": "우리 Neno Connect 계정",
       "dialogDesc": "일회용 초대 링크를 생성합니다. WhatsApp, Slack 등 원하는 채널로 공유하세요 — 이메일 서비스가 필요하지 않습니다.",
       "roleLabel": "역할",
       "validForLabel": "링크 유효 기간",
@@ -1515,7 +1594,7 @@
       "labelTooLong": "라벨은 {max}자 이하여야 합니다",
       "copied": "초대 링크가 복사되었습니다",
       "clipboardBlocked": "클립보드 접근이 차단되었습니다 — 링크를 직접 복사하세요",
-      "whatsappMessage": "이 링크(유효 기간 {expiresInDays}일)로 wacrm의 {accountName}에 참여하세요: {url}",
+      "whatsappMessage": "이 링크(유효 기간 {expiresInDays}일)로 Neno Connect의 {accountName}에 참여하세요: {url}",
       "createFailed": "초대를 만들지 못했습니다"
     },
     "tagsAndFields": {
@@ -1635,8 +1714,8 @@
       "saveResubmit": "저장 & 재제출",
       "submitApproval": "승인 요청",
       "deleteDialogTitle": "템플릿을 삭제하시겠습니까?",
-      "deleteMetaDesc": "\"{name}\"이(가) Meta와 wacrm에서 삭제됩니다. 이 템플릿을 사용하는 활성 브로드캐스트는 다음 전송부터 실패하기 시작합니다. 되돌릴 수 없습니다.",
-      "deleteLocalDesc": "\"{name}\"이(가) wacrm에서 삭제됩니다. Meta에 제출된 적이 없으므로 별도의 원격 정리가 필요하지 않습니다.",
+      "deleteMetaDesc": "\"{name}\"이(가) Meta와 Neno Connect에서 삭제됩니다. 이 템플릿을 사용하는 활성 브로드캐스트는 다음 전송부터 실패하기 시작합니다. 되돌릴 수 없습니다.",
+      "deleteLocalDesc": "\"{name}\"이(가) Neno Connect에서 삭제됩니다. Meta에 제출된 적이 없으므로 별도의 원격 정리가 필요하지 않습니다.",
       "deleting": "삭제 중…",
       "delete": "삭제",
       "toastLoadFailed": "템플릿을 불러오지 못했습니다",
@@ -1688,7 +1767,7 @@
       "notConnected": "연결되지 않음",
       "connectedDesc": "액세스 토큰으로 Meta 인증이 완료되었습니다. 웹훅이 실제로 연결되었는지는 아래 등록 상태를 확인하세요.",
       "notConnectedDesc": "아래에서 Meta API 자격 증명을 설정해 WhatsApp 비즈니스 계정을 연결하세요.",
-      "registered": "등록됨 — Meta가 wacrm으로 이벤트를 전달합니다",
+      "registered": "등록됨 — Meta가 Neno Connect으로 이벤트를 전달합니다",
       "notRegistered": "등록되지 않음 — Meta가 이벤트를 전달하지 않습니다",
       "verifyWithMeta": "Meta로 확인",
       "subscribedSince": "{date}부터 구독 중입니다. 이벤트가 더 이상 도착하지 않으면 Meta로 확인을 클릭하세요.",
@@ -1713,7 +1792,7 @@
       "twoStepPin": "2단계 인증 PIN",
       "optional": "(선택)",
       "pinPlaceholder": "Meta WhatsApp 관리자에서 발급받은 6자리 PIN",
-      "pinHint": "프로덕션 번호의 수신 메시지를 연결하려면 필요합니다. Meta 비즈니스 관리자 → WhatsApp 계정 → 전화번호 → 2단계 인증에서 설정한 뒤 여기에 붙여넣으면 wacrm이 해당 번호를 구독할 수 있습니다 — 그렇지 않으면 Meta는 마지막으로 이 번호를 등록한 앱으로 수신 이벤트를 보냅니다(공유 WABA 하의 두 번째 번호에서 흔히 발생하는 증상입니다). Meta 테스트 번호는 PIN이 없고 이미 등록되어 있으므로 이 필드를 비워두세요. 비워두면 기존 등록도 그대로 유지됩니다.",
+      "pinHint": "프로덕션 번호의 수신 메시지를 연결하려면 필요합니다. Meta 비즈니스 관리자 → WhatsApp 계정 → 전화번호 → 2단계 인증에서 설정한 뒤 여기에 붙여넣으면 Neno Connect이 해당 번호를 구독할 수 있습니다 — 그렇지 않으면 Meta는 마지막으로 이 번호를 등록한 앱으로 수신 이벤트를 보냅니다(공유 WABA 하의 두 번째 번호에서 흔히 발생하는 증상입니다). Meta 테스트 번호는 PIN이 없고 이미 등록되어 있으므로 이 필드를 비워두세요. 비워두면 기존 등록도 그대로 유지됩니다.",
       "webhookTitle": "웹훅 설정",
       "webhookDesc": "Meta 앱 대시보드의 웹훅 콜백으로 이 URL을 사용하세요.",
       "webhookUrl": "웹훅 콜백 URL",
@@ -1781,7 +1860,23 @@
       "phoneNumberIdNotNumeric": "전화번호 ID는 숫자만 포함해야 합니다. 전화번호가 아닌, Meta → WhatsApp → API 설정에 표시된 숫자 ID를 복사하세요.",
       "wabaIdNotNumeric": "WhatsApp 비즈니스 계정 ID는 숫자만 포함해야 합니다. Meta → WhatsApp → API 설정에서 복사하세요.",
       "wabaSubscribed": "WhatsApp 비즈니스 계정이 이 앱에 구독되어 있어 수신 웹훅을 받을 수 있습니다.",
-      "wabaNotSubscribed": "WhatsApp 비즈니스 계정이 이 앱에 구독되어 있지 않아 Meta가 수신 웹훅을 전달하지 않습니다. 액세스 토큰을 다시 입력하고 저장해 구독하세요."
+      "wabaNotSubscribed": "WhatsApp 비즈니스 계정이 이 앱에 구독되어 있지 않아 Meta가 수신 웹훅을 전달하지 않습니다. 액세스 토큰을 다시 입력하고 저장해 구독하세요.",
+      "card": {
+        "notConnected": "WhatsApp 연결 안 됨",
+        "connected": "연결됨",
+        "disconnected": "연결 끊김",
+        "checking": "Meta에서 번호를 확인하는 중…",
+        "connectHint": "아래에 전화번호 ID와 액세스 토큰을 입력해 연결하세요.",
+        "quality": "품질: {rating}",
+        "qualityLevels": {
+          "GREEN": "높음",
+          "YELLOW": "보통",
+          "RED": "낮음",
+          "UNKNOWN": "알 수 없음"
+        },
+        "webhookOk": "웹훅 수신 중",
+        "webhookIssue": "웹훅 구독 안 됨"
+      }
     },
     "sections": {
       "overview": "개요",
@@ -1945,7 +2040,7 @@
     },
     "aiConfig": {
       "title": "에이전트 설정",
-      "description": "OpenAI, Anthropic 또는 OpenAI 호환 API 키를 직접 사용하세요. wacrm은 입력한 키로 제공업체를 직접 호출하므로 좌석당 AI 요금이 없으며 데이터는 그대로 유지됩니다. 받은 키는 받은편지함 AI 초안, 자동 응답 봇, Playground에 사용됩니다.",
+      "description": "OpenAI, Anthropic 또는 OpenAI 호환 API 키를 직접 사용하세요. Neno Connect은 입력한 키로 제공업체를 직접 호출하므로 좌석당 AI 요금이 없으며 데이터는 그대로 유지됩니다. 받은 키는 받은편지함 AI 초안, 자동 응답 봇, Playground에 사용됩니다.",
       "adminOnlyConfig": "관리자와 소유자만 AI 설정을 변경할 수 있습니다.",
       "loadFailed": "AI 설정을 불러오지 못했습니다",
       "providerAndKey": "공급자 & 키",
@@ -2046,7 +2141,7 @@
     "titleJoin": "계정 만들고 참여하기",
     "title": "계정 만들기",
     "descJoin": "이메일을 인증한 뒤 초대를 수락해 팀에 참여하세요.",
-    "desc": "WhatsApp용 CRM Template을 시작하세요",
+    "desc": "Neno Connect을 시작하세요",
     "fullNameLabel": "이름",
     "fullNamePlaceholder": "홍길동",
     "emailLabel": "이메일",
@@ -2133,7 +2228,11 @@
     "retry": "다시 시도",
     "emptyTitle": "아직 알림이 없습니다",
     "emptyDesc": "누군가 대화를 배정하면 여기에 알림이 표시됩니다.",
-    "unread": "읽지 않음"
+    "unread": "읽지 않음",
+    "caughtUpTitle": "모두 확인했어요",
+    "caughtUpDesc": "읽지 않은 알림이 없습니다. 이전 알림은 아래에 있습니다.",
+    "today": "오늘",
+    "earlier": "이전"
   },
   "Agents": {
     "title": "AI 에이전트",
@@ -2153,7 +2252,20 @@
       "placeholder": "고객 메시지를 입력하세요…",
       "notConfigured": "아직 에이전트가 설정되지 않았습니다 — 먼저 설정을 완료하세요.",
       "noReply": "답변을 받을 수 없습니다.",
-      "unreachable": "에이전트에 연결할 수 없습니다."
+      "unreachable": "에이전트에 연결할 수 없습니다.",
+      "send": "보내기",
+      "startersTitle": "질문해 보기",
+      "startersHint": "예시를 눌러 에이전트가 고객에게 어떻게 답하는지 확인하세요.",
+      "starters": {
+        "properties": "어떤 매물이 있나요?",
+        "price": "방 2개짜리 가격은요?",
+        "visit": "현장 방문 예약할 수 있나요?",
+        "offers": "이번 달 할인 있나요?"
+      },
+      "howTitle": "플레이그라운드 사용법",
+      "howKnowledge": "실제 채팅과 똑같이 페르소나, 모델, 지식 베이스를 사용해 답합니다.",
+      "howHandoff": "에이전트가 상담원 전환이 필요하다고 판단하면 답변에 전환 표시가 나타납니다.",
+      "howSafe": "여기서 보낸 내용은 실제 고객에게 전송되지 않습니다."
     },
     "usage": {
       "title": "토큰 사용량",
@@ -2171,6 +2283,20 @@
       "byModel": "모델별",
       "modelCalls": "{tokens} 토큰 · 호출 {count}회",
       "partialWindow": "일부 기간만 표시 중 — 사용량이 많아 최근 기록만 요약되었습니다."
+    },
+    "status": {
+      "not_set_up": "설정 안 됨",
+      "live": "운영 중",
+      "paused": "일시중지"
+    },
+    "steps": {
+      "step": "{n}단계",
+      "apiKey": "API 키",
+      "model": "모델",
+      "persona": "페르소나와 말투",
+      "knowledge": "지식 베이스",
+      "handoff": "상담원 전환 규칙",
+      "goLive": "운영 시작"
     }
   },
   "Interactive": {
@@ -2199,10 +2325,14 @@
     "defaultListButton": "메뉴"
   },
   "DashboardShell": {
-    "loading": "불러오는 중..."
+    "loading": "워크스페이스를 불러오는 중…",
+    "skipToContent": "본문으로 건너뛰기"
   },
   "UiPrimitives": {
-    "close": "닫기"
+    "close": "닫기",
+    "cancel": "취소",
+    "confirm": "확인",
+    "delete": "삭제"
   },
   "GatedButton": {
     "readOnly": "읽기 전용 — 현재 역할로는 {action} 수 없습니다",
@@ -2218,7 +2348,7 @@
     }
   },
   "Metadata": {
-    "description": "직접 호스팅할 수 있는 WhatsApp용 CRM 템플릿입니다."
+    "description": "성장하는 비즈니스를 위한 WhatsApp CRM — 공유 받은편지함, 연락처, 파이프라인, 브로드캐스트, 자동화."
   },
   "Currency": {
     "USD": "미국 달러",
@@ -2672,7 +2802,7 @@
       "wabaIdDigits": "WhatsApp Business Account ID는 숫자만 포함해야 합니다 — Meta → WhatsApp → API Setup에서 복사하세요.",
       "pinDigits": "PIN은 정확히 6자리여야 합니다.",
       "validateFailed": "설정을 검증하지 못했습니다",
-      "numberLinkedElsewhere": "이 WhatsApp 전화번호는 이미 이 인스턴스의 다른 계정에 연결되어 있습니다. 각 전화번호는 하나의 wacrm 사용자에만 연결할 수 있습니다.",
+      "numberLinkedElsewhere": "이 WhatsApp 전화번호는 이미 이 인스턴스의 다른 계정에 연결되어 있습니다. 각 전화번호는 하나의 Neno Connect 사용자에만 연결할 수 있습니다.",
       "encryptFailed": "토큰을 암호화하지 못했습니다. 환경 변수의 ENCRYPTION_KEY가 유효한 64자 16진수 문자열인지 확인하세요.",
       "updateFailed": "설정을 업데이트하지 못했습니다",
       "saveFailed": "설정을 저장하지 못했습니다",
@@ -2727,5 +2857,80 @@
       "metaApiStatus": "Meta API 오류: {status}",
       "syncFailed": "템플릿을 동기화하지 못했습니다"
     }
+  },
+  "Nav": {
+    "groups": {
+      "engage": "소통",
+      "grow": "성장",
+      "automate": "자동화"
+    },
+    "items": {
+      "dashboard": "대시보드",
+      "inbox": "받은편지함",
+      "notifications": "알림",
+      "broadcasts": "브로드캐스트",
+      "contacts": "연락처",
+      "pipelines": "파이프라인",
+      "automations": "자동화",
+      "flows": "플로우",
+      "agents": "AI 에이전트",
+      "settings": "설정"
+    },
+    "descriptions": {
+      "dashboard": "오늘 하루를 한눈에",
+      "inbox": "고객 채팅에 답장하기",
+      "notifications": "멘션, 배정, 알림",
+      "broadcasts": "여러 연락처에 템플릿 보내기",
+      "contacts": "대화하는 모든 사람",
+      "pipelines": "단계별로 거래 추적",
+      "automations": "자동 답장, 태그, 후속 조치",
+      "flows": "안내형 채팅 여정 만들기",
+      "agents": "자주 묻는 질문에 AI가 답변",
+      "settings": "WhatsApp, 팀, 템플릿 등"
+    },
+    "sub": {
+      "newBroadcast": "새 브로드캐스트",
+      "broadcastReport": "브로드캐스트 보고서",
+      "newAutomation": "새 자동화",
+      "editAutomation": "자동화 편집",
+      "automationLogs": "실행 기록",
+      "flowEditor": "플로우 편집기",
+      "flowRuns": "플로우 실행"
+    },
+    "beta": "베타",
+    "breadcrumb": "탐색 경로",
+    "collapseSidebar": "사이드바 접기",
+    "expandSidebar": "사이드바 펼치기",
+    "workspace": "워크스페이스",
+    "mobileNav": "메인",
+    "more": "더보기",
+    "moreTitle": "모든 페이지"
+  },
+  "CommandPalette": {
+    "trigger": "검색하거나 이동…",
+    "title": "검색",
+    "placeholder": "페이지, 연락처, 채팅 검색…",
+    "pages": "페이지",
+    "conversations": "대화",
+    "contacts": "연락처",
+    "actions": "빠른 작업",
+    "searching": "검색 중…",
+    "noResults": "“{query}”에 대한 결과가 없습니다",
+    "noPhone": "전화번호 없음",
+    "toggleMode": "{mode} 모드로 전환",
+    "newBroadcast": "브로드캐스트 만들기",
+    "newAutomation": "자동화 만들기",
+    "hintNavigate": "이동",
+    "hintOpen": "열기",
+    "hintClose": "닫기"
+  },
+  "WhatsAppStatus": {
+    "connected": "연결됨",
+    "disconnected": "연결 끊김",
+    "notConfigured": "연결 안 됨",
+    "checking": "확인 중…",
+    "tooltipConnected": "WhatsApp이 연결되어 메시지를 받고 있습니다",
+    "tooltipDisconnected": "WhatsApp 연결이 끊겼습니다 — 클릭하여 다시 연결하세요",
+    "tooltipNotConfigured": "채팅을 시작하려면 WhatsApp 번호를 연결하세요"
   }
 }

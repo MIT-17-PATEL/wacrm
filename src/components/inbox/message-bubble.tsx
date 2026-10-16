@@ -81,17 +81,18 @@ function StatusIcon({
 }) {
   switch (status) {
     case "sending":
-      return <Clock className="h-3 w-3 text-muted-foreground" />;
+      return <Clock className="h-3 w-3 opacity-60" />;
     case "sent":
-      return <Check className="h-3 w-3 text-muted-foreground" />;
+      return <Check className="h-3 w-3 opacity-60" />;
     case "delivered":
-      return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
+      return <CheckCheck className="h-3 w-3 opacity-60" />;
     case "read":
-      return <CheckCheck className="h-3 w-3 text-blue-400" />;
+      // "Read" is the one tick with colour (info blue) — it means something.
+      return <CheckCheck className="h-3 w-3 text-info" />;
     case "failed":
       return (
-        <span className="inline-flex" title={title ?? undefined}>
-          <XCircle className="h-3 w-3 text-red-400" />
+        <span className="inline-flex rounded-full bg-card" title={title ?? undefined}>
+          <XCircle className="h-3 w-3 text-danger" />
         </span>
       );
     default:
@@ -174,7 +175,7 @@ function MessageContent({
 
     case "template":
       // Templates are almost always outbound, where the bubble fill IS
-      // `primary` — so the old `bg-primary/20 text-primary` chip was
+      // `primary` — so the old `bg-accent text-primary` chip was
       // primary-on-primary and invisible. Paired with a null
       // content_text (issue #483) that rendered a bubble with nothing
       // in it at all. Invert on the primary fill, and fall back to the
@@ -184,10 +185,10 @@ function MessageContent({
         <div>
           <span
             className={cn(
-              "mb-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium",
+              "mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold  ",
               isAgent
-                ? "bg-primary-foreground/20 text-primary-foreground"
-                : "bg-primary/20 text-primary",
+                ? "border border-border text-muted-foreground"
+                : "bg-accent text-primary",
             )}
           >
             <LayoutTemplate className="h-3 w-3" />
@@ -231,7 +232,7 @@ function MessageContent({
       if (message.sender_type === "customer") {
         return (
           <div className="flex flex-col gap-0.5">
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
               <CornerDownLeft className="h-3 w-3" />
               {t("buttonReply")}
             </span>
@@ -282,17 +283,17 @@ export function MessageBubble({
     >
       <div
         className={cn(
-          "relative rounded-2xl px-3 py-2",
+          "relative rounded-2xl px-3.5 py-2",
           isAgent
-            ? "rounded-br-md bg-primary text-primary-foreground"
-            : "rounded-bl-md bg-muted text-foreground",
+            ? "rounded-br-md bg-bubble-out text-foreground"
+            : "rounded-bl-md border border-border bg-card text-foreground",
         )}
       >
         {reply && (
           <ReplyQuote
             authorLabel={reply.authorLabel}
             preview={reply.preview}
-            onPrimary={isAgent}
+            onPrimary={false}
           />
         )}
         <MessageContent
@@ -313,7 +314,7 @@ export function MessageBubble({
               glance. */}
           {message.ai_generated && (
             <span
-              className="inline-flex items-center gap-0.5 rounded-full bg-primary-foreground/20 px-1.5 py-px text-[9px] font-semibold uppercase leading-none tracking-wide text-primary-foreground"
+              className="inline-flex items-center gap-0.5 rounded border border-border px-1 text-[10px] leading-4 font-medium text-muted-foreground"
               title={t("aiBadgeTitle")}
             >
               <Sparkles className="h-2.5 w-2.5" />
@@ -327,7 +328,7 @@ export function MessageBubble({
               // timestamp must read against that (not the neutral
               // foreground) — otherwise it goes low-contrast in light
               // mode. Inbound bubbles use the muted surface.
-              isAgent ? "text-primary-foreground/70" : "text-muted-foreground",
+              "text-muted-foreground",
             )}
           >
             {time}

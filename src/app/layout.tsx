@@ -6,6 +6,9 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { MotionProvider } from "@/components/motion/motion-provider";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
+import { BRAND } from "@/lib/brand";
 import {
   DEFAULT_MODE,
   DEFAULT_THEME,
@@ -16,9 +19,11 @@ import {
 } from "@/lib/themes";
 
 const inter = Inter({
-  variable: "--font-sans",
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Metadata");
@@ -30,9 +35,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: BRAND.name,
+    template: `%s — ${BRAND.name}`,
   },
+  applicationName: BRAND.name,
   robots: {
     index: false,
     follow: false,
@@ -48,7 +54,11 @@ const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#020617",
+  // Mirrors --background of each mode in globals.css.
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0b0c0e" },
+    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
+  ],
   colorScheme: "dark light",
 };
 
@@ -117,8 +127,10 @@ export default async function RootLayout({
       <body className="min-h-full bg-background text-foreground font-sans">
         <NextIntlClientProvider messages={messages} locale={locale}>
           <ThemeProvider>
-            {children}
-            <ThemedToaster />
+            <MotionProvider>
+              <ConfirmProvider>{children}</ConfirmProvider>
+              <ThemedToaster />
+            </MotionProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

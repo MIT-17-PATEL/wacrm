@@ -14,8 +14,11 @@ import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactSidebar } from "@/components/inbox/contact-sidebar";
 import { toast } from "sonner";
-import { WifiOff } from "lucide-react";
+import Link from "next/link";
+import { Megaphone, PlugZap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Remembers the agent's show/hide choice for the desktop contact panel
 // across reloads and sessions (device-scoped, like the theme prefs).
@@ -34,6 +37,7 @@ export default function InboxPage() {
 
 function InboxPageInner() {
   const t = useTranslations("Inbox.page");
+  const tThread = useTranslations("Inbox.messageThread");
   const router = useRouter();
   const searchParams = useSearchParams();
   /**
@@ -44,6 +48,10 @@ function InboxPageInner() {
   const deepLinkConvId = searchParams.get("c");
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  // Flips once the first list fetch lands — distinguishes "no
+  // conversations at all" (show the onboarding empty state) from
+  // "still loading".
+  const [listLoaded, setListLoaded] = useState(false);
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
   const [activeContact, setActiveContact] = useState<Contact | null>(null);
@@ -403,6 +411,7 @@ function InboxPageInner() {
   const handleConversationsLoaded = useCallback(
     (loaded: Conversation[]) => {
       setConversations(loaded);
+      setListLoaded(true);
       // Resolve a pending deep-link here rather than in an effect — this
       // is an event handler, so the setState calls below are allowed by
       // react-hooks/set-state-in-effect. Runs once per ?c=<id> URL value
@@ -562,18 +571,50 @@ function InboxPageInner() {
   const hasActiveConv = !!activeConversation;
 
   return (
-    <div className="-m-4 flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden sm:-m-6">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* WhatsApp connection banner — in the flex column, not absolute,
           so it pushes the panels down instead of overlapping them. */}
       {whatsappConnected === false && (
-        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2">
-          <WifiOff className="h-4 w-4 text-amber-400" />
-          <p className="text-xs text-amber-400">
-            {t("whatsappNotConnected")}
-          </p>
+        <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-4 text-[13px] text-muted-foreground">
+          <span aria-hidden className="size-1.5 rounded-full bg-warning" />
+          <span className="truncate">{t("whatsappNotConnected")}</span>
+          <Link href="/settings?tab=whatsapp" className="ml-auto shrink-0 font-medium text-primary hover:underline">
+            {t("connect")}
+          </Link>
         </div>
       )}
 
+      {listLoaded && conversations.length === 0 ? (
+        <div className="bg-background flex flex-1 items-center justify-center overflow-y-auto">
+          <EmptyState
+            illustration="chat"
+            title={tThread("emptyTitle")}
+            description={tThread("emptyHint")}
+            action={
+              <Link href="/settings?tab=whatsapp" className={buttonVariants()}>
+                <PlugZap />
+                {tThread("connectWhatsApp")}
+              </Link>
+            }
+            secondaryAction={
+              <Link href="/broadcasts/new" className={buttonVariants({ variant: "outline" })}>
+                <Megaphone />
+                {tThread("sendBroadcast")}
+              </Link>
+            }
+          />
+          {/* Keep the list mounted (hidden) so realtime inserts still land. */}
+          <div className="hidden">
+            <ConversationList
+              activeConversationId={null}
+              onSelect={handleSelectConversation}
+              conversations={conversations}
+              onConversationsLoaded={handleConversationsLoaded}
+              resyncToken={resyncToken}
+            />
+          </div>
+        </div>
+      ) : (
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel: Conversation list.
             Hidden on mobile when a conversation is selected so the
@@ -636,6 +677,7 @@ function InboxPageInner() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

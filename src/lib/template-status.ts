@@ -27,7 +27,7 @@ export const templateStatusConfig: Record<
   },
   PENDING: {
     label: t('PENDING'),
-    classes: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30',
+    classes: 'bg-warning/20 text-warning border-warning/30',
   },
   APPROVED: {
     label: t('APPROVED'),
@@ -35,7 +35,7 @@ export const templateStatusConfig: Record<
   },
   REJECTED: {
     label: t('REJECTED'),
-    classes: 'bg-red-600/20 text-red-400 border-red-600/30',
+    classes: 'bg-danger/20 text-danger border-danger/30',
   },
   PAUSED: {
     label: t('PAUSED'),
@@ -43,11 +43,11 @@ export const templateStatusConfig: Record<
   },
   DISABLED: {
     label: t('DISABLED'),
-    classes: 'bg-red-900/30 text-red-500 border-red-900/40',
+    classes: 'bg-danger/10 text-danger border-danger/40',
   },
   IN_APPEAL: {
     label: t('IN_APPEAL'),
-    classes: 'bg-blue-600/20 text-blue-400 border-blue-600/30',
+    classes: 'bg-info/20 text-info border-info/30',
   },
   PENDING_DELETION: {
     label: t('PENDING_DELETION'),

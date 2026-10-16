@@ -78,6 +78,10 @@ const nextConfig: NextConfig = {
   // Harmless outside Docker: `next start` keeps working as before.
   output: "standalone",
 
+  // Dev-only: keep the Next.js dev badge out of the sidebar's bottom-left
+  // corner (it covered "Collapse sidebar"). No effect on production.
+  devIndicators: { position: "bottom-right" },
+
   /**
    * Cross-origin dev access (Next.js 16).
    *

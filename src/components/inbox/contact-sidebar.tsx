@@ -21,6 +21,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { useTranslations } from "next-intl";
 import { contactHandle } from "@/lib/whatsapp/wa-identity";
+import { ContactAvatar } from "@/components/ui/contact-avatar";
+import { formatCurrency } from "@/lib/currency";
 
 interface ContactSidebarProps {
   contact: Contact | null;
@@ -125,33 +127,28 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
 
   if (!contact) {
     return (
-      <div className="flex h-full w-70 items-center justify-center border-l border-border bg-card">
+      <div className="flex h-full w-72 items-center justify-center border-l border-border bg-card px-6 text-center">
         <p className="text-sm text-muted-foreground">{tThread("selectConversation")}</p>
       </div>
     );
   }
 
   const displayName = contact.name || contactHandle(contact);
-  const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="flex h-full w-70 flex-col border-l border-border bg-card">
+    <div className="flex h-full w-72 flex-col border-l border-border bg-card">
       <ScrollArea className="flex-1">
         <div className="p-4">
           {/* Contact Info */}
           <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-lg font-semibold text-foreground">
-              {contact.avatar_url ? (
-                <img
-                  src={contact.avatar_url}
-                  alt={displayName}
-                  className="h-16 w-16 rounded-full object-cover"
-                />
-              ) : (
-                initials
-              )}
-            </div>
-            <h3 className="mt-3 text-sm font-semibold text-foreground">
+            <ContactAvatar
+              name={displayName}
+              seed={contact.id}
+              src={contact.avatar_url}
+              size="xl"
+              className="shadow-card"
+            />
+            <h3 className="mt-3 text-base font-semibold text-foreground">
               {displayName}
             </h3>
             {contact.company && (
@@ -170,7 +167,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 {contactHandle(contact)}
               </span>
               {copied ? (
-                <Check className="h-3 w-3 text-primary" />
+                <Check className="h-3 w-3 text-muted-foreground" />
               ) : (
                 <Copy className="h-3 w-3 text-muted-foreground" />
               )}
@@ -189,7 +186,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
 
           {/* Tags */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
               <TagIcon className="h-3 w-3" />
               {tSidebar("tags")}
             </div>
@@ -218,7 +215,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
 
           {/* Active Deals */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
               <DollarSign className="h-3 w-3" />
               {tSidebar("deals")}
             </div>
@@ -229,15 +226,14 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 deals.map((deal) => (
                   <div
                     key={deal.id}
-                    className="rounded-lg bg-muted px-3 py-2"
+                    className="rounded-xl border border-border bg-card-2 px-3 py-2.5"
                   >
                     <p className="text-sm font-medium text-foreground">
                       {deal.title}
                     </p>
                     <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        {deal.currency ?? "$"}
-                        {deal.value.toLocaleString()}
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {formatCurrency(deal.value, deal.currency ?? undefined)}
                       </span>
                       {deal.stage && (
                         <span
@@ -262,7 +258,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
 
           {/* Notes */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
               <StickyNote className="h-3 w-3" />
               {tSidebar("notes")}
             </div>

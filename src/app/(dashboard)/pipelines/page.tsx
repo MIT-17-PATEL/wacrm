@@ -30,6 +30,9 @@ import { useCan } from "@/hooks/use-can";
 import { useAuth } from "@/hooks/use-auth";
 import { GatedButton } from "@/components/ui/gated-button";
 import { useTranslations } from "next-intl";
+import { SquareKanban } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Pipeline creation is admin-class (settings-tier write under
 // the new RLS); deal creation is operational and only requires
@@ -302,14 +305,19 @@ export default function PipelinesPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" aria-busy>
         <div className="flex items-center justify-between">
-          <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-          <div className="h-9 w-28 animate-pulse rounded-lg bg-muted" />
+          <Skeleton className="h-12 w-64 rounded-2xl" />
+          <Skeleton className="h-9 w-28 rounded-lg" />
         </div>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+        <div className="flex gap-3 overflow-hidden">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-96 w-72 animate-pulse rounded-xl bg-muted/50" />
+            <Skeleton key={i} className="h-96 w-72 shrink-0 rounded-2xl" style={{ opacity: 1 - i * 0.12 }} />
           ))}
         </div>
       </div>
@@ -321,13 +329,15 @@ export default function PipelinesPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
+          <span className="icon-tile size-12 rounded-2xl">
+            <SquareKanban className="size-6" />
+          </span>
           {/* Pipeline selector dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors data-[popup-open]:bg-muted"
+              className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-left transition-colors hover:bg-muted data-[popup-open]:bg-muted"
             >
-              <GitBranch className="h-4 w-4 text-primary" />
-              <span className="font-semibold">
+              <span className="text-[26px] leading-tight font-semibold text-foreground">
                 {selectedPipeline?.name ?? t("selectPipeline")}
               </span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -375,9 +385,8 @@ export default function PipelinesPage() {
             canAct={canEditSettings}
             gateReason={tGate("reasons.createPipelines")}
             onClick={() => setNewPipelineOpen(true)}
-            className="border-border bg-card text-foreground hover:bg-muted"
           >
-            <Plus className="mr-1 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             {t("addPipeline")}
           </GatedButton>
           <GatedButton
@@ -385,9 +394,8 @@ export default function PipelinesPage() {
             gateReason={tGate("reasons.createDeals")}
             disabled={!selectedPipelineId || stages.length === 0}
             onClick={() => handleAddDeal()}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            <Plus className="mr-1 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             {t("addDeal")}
           </GatedButton>
         </div>
@@ -395,23 +403,46 @@ export default function PipelinesPage() {
 
       {/* Board */}
       {pipelines.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20">
-          <GitBranch className="h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium text-foreground">
-            {t("noPipelinesYet")}
-          </h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t("createToStartTracking")}
-          </p>
-          <GatedButton
-            canAct={canEditSettings}
-            gateReason={tGate("reasons.createPipelines")}
-            onClick={() => setNewPipelineOpen(true)}
-            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            {t("createPipeline")}
-          </GatedButton>
+        <div className="relative">
+          {/* Ghost columns hint at what the board will look like. */}
+          <div aria-hidden className="flex gap-3 overflow-hidden opacity-60">
+            {SPEC_DEFAULT_STAGES.map((st, i) => (
+              <div
+                key={st.nameKey}
+                className="flex h-[420px] w-72 shrink-0 flex-col gap-2 rounded-2xl border border-dashed border-border-strong bg-card/40 p-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full" style={{ backgroundColor: st.color }} />
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    {t(`defaultStages.${st.nameKey}`)}
+                  </span>
+                </div>
+                {Array.from({ length: Math.max(0, 3 - i) }).map((_, j) => (
+                  <div key={j} className="h-20 rounded-xl border border-border bg-card/60" />
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-popover flex max-w-sm flex-col items-center rounded-2xl border border-border-strong px-6 py-2 shadow-raised">
+              <EmptyState
+                compact
+                illustration="pipeline"
+                title={t("noPipelinesYet")}
+                description={t("createToStartTracking")}
+                action={
+                  <GatedButton
+                    canAct={canEditSettings}
+                    gateReason={tGate("reasons.createPipelines")}
+                    onClick={() => setNewPipelineOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t("createPipeline")}
+                  </GatedButton>
+                }
+              />
+            </div>
+          </div>
         </div>
       ) : (
         <>

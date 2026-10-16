@@ -1,9 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { MessageSquare } from 'lucide-react'
 import type { ConversationsSeriesPoint } from '@/lib/dashboard/types'
-import { EmptyState } from './empty-state'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from './skeleton'
 import { cn } from '@/lib/utils'
 
@@ -27,6 +26,10 @@ const VB_W = 760
 const VB_H = 240
 const PADDING = { top: 16, right: 16, bottom: 28, left: 40 }
 
+// Neutral series colours: foreground for outgoing, muted for incoming.
+const INCOMING = 'var(--chart-2)'
+const OUTGOING = 'var(--chart-1)'
+
 import { useTranslations } from 'next-intl'
 
 export function ConversationsChart({ series, loading, range, onRangeChange }: ConversationsChartProps) {
@@ -49,22 +52,25 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
   }, [data])
 
   return (
-    <section className="flex h-full flex-col rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-5 py-4">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+    <section className="surface surface-hover flex h-full flex-col">
+      <header className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+        <div className="flex items-center gap-3">
+          <div>
+          <h2 className="text-[15px] font-semibold text-foreground">{t('title')}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t('description')}</p>
+          </div>
         </div>
-        <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
+        <div role="group" className="flex items-center gap-0.5 rounded-xl border border-border bg-card-2/60 p-0.5">
           {[7, 30, 90].map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => onRangeChange(r as RangeDays)}
+              aria-pressed={range === r}
               className={cn(
-                'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                'rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors',
                 range === r
-                  ? 'bg-secondary text-secondary-foreground'
+                  ? 'bg-card text-foreground shadow-card'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -79,18 +85,19 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
           <Skeleton className="h-[240px] w-full" />
         ) : data.every((p) => p.incoming === 0 && p.outgoing === 0) ? (
           <EmptyState
-            icon={MessageSquare}
+            compact
+            illustration="chart"
             title={t('noActivity')}
-            hint={t('noActivityHint')}
+            description={t('noActivityHint')}
           />
         ) : (
           <LineSvg data={data} maxY={maxY} ticks={niceTicks} t={t} />
         )}
       </div>
 
-      <footer className="flex items-center gap-4 border-t border-border px-5 py-3 text-xs text-muted-foreground">
-        <LegendDot color="#3b82f6" label={t('incoming')} />
-        <LegendDot color="#7c3aed" label={t('outgoing')} />
+      <footer className="flex items-center gap-4 px-5 pb-4 text-xs text-muted-foreground">
+        <LegendDot color={INCOMING} label={t('incoming')} />
+        <LegendDot color={OUTGOING} label={t('outgoing')} />
       </footer>
     </section>
   )
@@ -212,8 +219,8 @@ function LineSvg({
                 x2={VB_W - PADDING.right}
                 y1={y}
                 y2={y}
-                stroke="var(--border)"
-                strokeDasharray="3 3"
+                stroke="var(--border-strong)"
+                strokeDasharray="2 4"
               />
               <text
                 x={PADDING.left - 8}
@@ -243,21 +250,22 @@ function LineSvg({
           ) : null,
         )}
 
-        {/* Outgoing polyline (violet) */}
+
+        {/* Outgoing line */}
         <path
           d={outgoingPath}
           fill="none"
-          stroke="#7c3aed"
-          strokeWidth={2}
+          stroke={OUTGOING}
+          strokeWidth={1.5}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Incoming polyline (blue) */}
+        {/* Incoming line */}
         <path
           d={incomingPath}
           fill="none"
-          stroke="#3b82f6"
-          strokeWidth={2}
+          stroke={INCOMING}
+          strokeWidth={1.5}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -273,8 +281,8 @@ function LineSvg({
               stroke="var(--muted-foreground)"
               strokeDasharray="3 3"
             />
-            <circle cx={hoverX} cy={yFor(data[hover.idx].incoming)} r={3.5} fill="#3b82f6" />
-            <circle cx={hoverX} cy={yFor(data[hover.idx].outgoing)} r={3.5} fill="#7c3aed" />
+            <circle cx={hoverX} cy={yFor(data[hover.idx].incoming)} r={4} fill={INCOMING} stroke="var(--card)" strokeWidth={2} />
+            <circle cx={hoverX} cy={yFor(data[hover.idx].outgoing)} r={4} fill={OUTGOING} stroke="var(--card)" strokeWidth={2} />
           </g>
         )}
       </svg>
@@ -285,17 +293,17 @@ function LineSvg({
           letterboxed viewBox percentage. */}
       {hovered && hover !== null && (
         <div
-          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-md border border-border bg-popover px-2.5 py-1.5 text-[11px] shadow-lg"
+          className="bg-popover pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-xl border border-border-strong px-3 py-2 text-xs shadow-raised"
           style={{ left: `${hover.tooltipLeftPx}px` }}
         >
           <div className="font-medium text-popover-foreground">{longDayLabel(hovered.day)}</div>
           <div className="mt-1 flex flex-col gap-0.5">
-            <span className="flex items-center gap-1.5 text-blue-300">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
+            <span className="flex items-center gap-1.5 text-foreground tabular-nums">
+              <span className="inline-block size-2 rounded-full" style={{ background: INCOMING }} />
               {t('tooltipIncoming', { count: hovered.incoming })}
             </span>
-            <span className="flex items-center gap-1.5 text-primary">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+            <span className="flex items-center gap-1.5 text-foreground tabular-nums">
+              <span className="inline-block size-2 rounded-full" style={{ background: OUTGOING }} />
               {t('tooltipOutgoing', { count: hovered.outgoing })}
             </span>
           </div>
@@ -308,7 +316,7 @@ function LineSvg({
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+      <span className="inline-block size-2 rounded-full" style={{ background: color }} />
       {label}
     </span>
   )

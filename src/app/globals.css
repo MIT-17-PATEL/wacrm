@@ -2,14 +2,17 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* `dark:` / `light:` key off the mode attribute the theme boot script
+ * writes on <html> (no `.dark` class is ever set). */
+@custom-variant dark (&:where(html[data-mode="dark"], html[data-mode="dark"] *));
+@custom-variant light (&:where(html[data-mode="light"], html[data-mode="light"] *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-inter);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -26,10 +29,12 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
@@ -39,192 +44,310 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* Secondary card surface (tile / hover backgrounds) and the accent
-   * extras the Settings redesign leans on. The raw --primary-* vars
-   * already exist per-accent below; these mappings expose them (and
-   * --card-2) as Tailwind utilities: bg-card-2, bg-primary-soft,
-   * bg-primary-soft-2, hover:bg-primary-hover. */
   --color-card-2: var(--card-2);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-2: var(--primary-soft-2);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-bubble-out: var(--bubble-out);
+
+  /* Semantic — small dots and text only, never big fills. */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-solid: var(--danger-solid);
+  --color-info: var(--info);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 10px;
+  --radius-3xl: 12px;
+  --radius-4xl: 16px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
 }
 
 /* ============================================================
- * THEMING — two orthogonal dimensions
+ * THEMING — neutral first, one accent.
  *
- *   1. MODE   (light / dark)  → neutral surfaces. Selected with
- *      `document.documentElement.dataset.mode`. Defaults to dark.
- *   2. ACCENT (violet / …)    → the primary color only. Selected
- *      with `document.documentElement.dataset.theme`.
+ *   MODE   (light / dark) → neutral surfaces + semantic colours.
+ *   ACCENT (green / blue / graphite) → --primary only. The accent is
+ *   reserved for: the primary button, the active nav indicator, focus
+ *   rings, links, toggles/checkboxes and the selected tab.
  *
- * The two compose: any accent works in either mode. Neutral
- * tokens (background / card / border / muted / sidebar surfaces /
- * neutral charts / radius) live in the MODE blocks below; accent
- * tokens (--primary*, --ring, --chart-1, --sidebar-primary*,
- * --sidebar-ring) live in the ACCENT blocks. They set disjoint
- * variables, so cascade order between them doesn't matter.
- *
- * `:root` carries the dark-mode + violet defaults so a visitor
- * renders correctly before JS runs; the boot script in
- * layout.tsx replays the saved mode + accent before first paint.
- *
- * The three `--primary-*` extras (hover / soft / soft-2) feed
- * hovered primary buttons and tinted-primary surfaces (sidebar
- * active pill, validation badges).
- *
- * Token shapes come straight from the design handoff at
- * project/Color Themes.html — change one, change the other.
+ * Colour appears only where it carries meaning. Components never
+ * hard-code colours — every value lives here.
  * ============================================================ */
-
-/* ---- MODE: neutral surfaces ---- */
 
 :root,
 html[data-mode="dark"] {
-  --background: oklch(0.13 0.01 260);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0.01 260);
-  --card-2: oklch(0.205 0.01 260);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0.01 260);
-  --popover-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.22 0.01 260);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.65 0.01 260);
-  --accent: oklch(0.22 0.01 260);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.28 0.01 260);
-  --input: oklch(0.28 0.01 260);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.16 0.01 260);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.22 0.01 260);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.28 0.01 260);
+  color-scheme: dark;
+  --background: #0b0c0e;
+  --foreground: #ededef;
+  --card: #111214;
+  --card-2: #17181b;
+  --card-foreground: #ededef;
+  --popover: #17181b;
+  --popover-foreground: #ededef;
+  --secondary: #17181b;
+  --secondary-foreground: #ededef;
+  --muted: #17181b;
+  --muted-foreground: #8b8d94;
+  --faint: #5e6068;
+  --accent: #1c1d21;
+  --accent-foreground: #ededef;
+  --border: #232428;
+  --border-strong: #2e3035;
+  --input: #2e3035;
+  --sidebar: #0b0c0e;
+  --sidebar-foreground: #ededef;
+  --sidebar-accent: #17181b;
+  --sidebar-accent-foreground: #ededef;
+  --sidebar-border: #232428;
+  --overlay: rgb(0 0 0 / 0.6);
+  --bubble-out: #1f2125;
+
+  --success: #3fb37f;
+  --warning: #d9a23a;
+  --danger: #e5534b;
+  --destructive: #e5534b;
+  --danger-solid: #c93c35;
+  --info: #5b8def;
+
+  --chart-1: #ededef;
+  --chart-2: #8b8d94;
+  --chart-3: #5e6068;
+  --chart-4: #3a3c42;
+  --chart-5: #2e3035;
+
+  --shadow-card: none;
+  --shadow-raised: 0 8px 24px rgb(0 0 0 / 0.45);
 }
 
 html[data-mode="light"] {
-  --background: oklch(0.99 0.002 260);
-  --foreground: oklch(0.21 0.01 260);
-  --card: oklch(1 0 0);
-  --card-2: oklch(0.985 0.002 260);
-  --card-foreground: oklch(0.21 0.01 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.01 260);
-  --secondary: oklch(0.967 0.003 260);
-  --secondary-foreground: oklch(0.25 0.01 260);
-  --muted: oklch(0.967 0.003 260);
-  --muted-foreground: oklch(0.52 0.015 260);
-  --accent: oklch(0.96 0.004 260);
-  --accent-foreground: oklch(0.25 0.01 260);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0.004 260);
-  --input: oklch(0.922 0.004 260);
-  --chart-2: oklch(0.6 0.1 260);
-  --chart-3: oklch(0.7 0.06 260);
-  --chart-4: oklch(0.8 0.04 260);
-  --chart-5: oklch(0.87 0.03 260);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.002 260);
-  --sidebar-foreground: oklch(0.21 0.01 260);
-  --sidebar-accent: oklch(0.96 0.004 260);
-  --sidebar-accent-foreground: oklch(0.25 0.01 260);
-  --sidebar-border: oklch(0.922 0.004 260);
+  color-scheme: light;
+  --background: #fafaf9;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-2: #f4f4f3;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --secondary: #f4f4f3;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f3;
+  --muted-foreground: #6b6b70;
+  --faint: #9a9a9f;
+  --accent: #f1f1ef;
+  --accent-foreground: #18181b;
+  --border: #e7e6e3;
+  --border-strong: #d6d5d1;
+  --input: #d6d5d1;
+  --sidebar: #fafaf9;
+  --sidebar-foreground: #18181b;
+  --sidebar-accent: #f1f1ef;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #e7e6e3;
+  --overlay: rgb(24 24 27 / 0.3);
+  --bubble-out: #eeefed;
+
+  /* Slightly deeper than dark mode so semantic text stays AA on white. */
+  --success: #1f8a5b;
+  --warning: #9a6a10;
+  --danger: #c93c35;
+  --destructive: #c93c35;
+  --danger-solid: #c93c35;
+  --info: #3a6fd8;
+
+  --chart-1: #18181b;
+  --chart-2: #8f8f94;
+  --chart-3: #b5b5b9;
+  --chart-4: #d6d5d1;
+  --chart-5: #e7e6e3;
+
+  --shadow-card: 0 1px 2px rgb(24 24 27 / 0.04);
+  --shadow-raised: 0 8px 24px rgb(24 24 27 / 0.08);
 }
 
-/* ---- ACCENT: primary color ---- */
+/* ---- ACCENT ---- */
 
 :root,
-html[data-theme="violet"] {
-  --primary: oklch(0.526 0.247 293);
-  --primary-foreground: oklch(0.985 0 0);
-  --primary-hover: oklch(0.6 0.22 293);
-  --primary-soft: oklch(0.526 0.247 293 / 0.12);
-  --primary-soft-2: oklch(0.526 0.247 293 / 0.2);
-  --ring: oklch(0.526 0.247 293);
-  --chart-1: oklch(0.526 0.247 293);
-  --sidebar-primary: oklch(0.526 0.247 293);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-ring: oklch(0.526 0.247 293);
+html[data-theme="green"] {
+  --primary: #2f9e6e;
+  --primary-foreground: #ffffff;
+  --primary-hover: #2a8e63;
+}
+html[data-theme="blue"] {
+  --primary: #5b8def;
+  --primary-foreground: #ffffff;
+  --primary-hover: #4f7fdf;
+}
+html[data-theme="graphite"] {
+  --primary: #e4e4e7;
+  --primary-foreground: #18181b;
+  --primary-hover: #d4d4d8;
+}
+html[data-mode="light"][data-theme="green"] {
+  --primary: #237a55;
+  --primary-hover: #1d6a49;
+}
+html[data-mode="light"][data-theme="blue"] {
+  --primary: #3a6fd8;
+  --primary-hover: #315fbd;
+}
+html[data-mode="light"][data-theme="graphite"] {
+  --primary: #27272a;
+  --primary-foreground: #ffffff;
+  --primary-hover: #3f3f46;
 }
 
-html[data-theme="emerald"] {
-  --primary: oklch(0.62 0.16 162);
-  --primary-foreground: oklch(0.16 0.02 162);
-  --primary-hover: oklch(0.68 0.15 162);
-  --primary-soft: oklch(0.62 0.16 162 / 0.12);
-  --primary-soft-2: oklch(0.62 0.16 162 / 0.22);
-  --ring: oklch(0.62 0.16 162);
-  --chart-1: oklch(0.62 0.16 162);
-  --chart-2: oklch(0.7 0.14 195);
-  --sidebar-primary: oklch(0.62 0.16 162);
-  --sidebar-primary-foreground: oklch(0.16 0.02 162);
-  --sidebar-ring: oklch(0.62 0.16 162);
+html {
+  --radius: 8px;
+  --ring: var(--primary);
+  --primary-soft: color-mix(in oklab, var(--primary) 10%, transparent);
+  --primary-soft-2: color-mix(in oklab, var(--primary) 18%, transparent);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--primary);
 }
 
-html[data-theme="cobalt"] {
-  --primary: oklch(0.585 0.2 254);
-  --primary-foreground: oklch(0.985 0 0);
-  --primary-hover: oklch(0.66 0.18 254);
-  --primary-soft: oklch(0.585 0.2 254 / 0.12);
-  --primary-soft-2: oklch(0.585 0.2 254 / 0.22);
-  --ring: oklch(0.585 0.2 254);
-  --chart-1: oklch(0.585 0.2 254);
-  --chart-2: oklch(0.7 0.15 220);
-  --sidebar-primary: oklch(0.585 0.2 254);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-ring: oklch(0.585 0.2 254);
+/* ============================================================
+ * Utilities
+ * ============================================================ */
+
+/* Flat card: surface + 1px border, 10px radius, no shadow in dark. */
+@utility surface {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+}
+/* Hover: the border steps up to border-strong. Nothing else. */
+@utility surface-hover {
+  transition: border-color 140ms ease;
+  &:hover {
+    border-color: var(--border-strong);
+  }
 }
 
-html[data-theme="amber"] {
-  --primary: oklch(0.745 0.16 65);
-  --primary-foreground: oklch(0.18 0.03 65);
-  --primary-hover: oklch(0.8 0.15 65);
-  --primary-soft: oklch(0.745 0.16 65 / 0.12);
-  --primary-soft-2: oklch(0.745 0.16 65 / 0.22);
-  --ring: oklch(0.745 0.16 65);
-  --chart-1: oklch(0.745 0.16 65);
-  --chart-2: oklch(0.7 0.15 35);
-  --sidebar-primary: oklch(0.745 0.16 65);
-  --sidebar-primary-foreground: oklch(0.18 0.03 65);
-  --sidebar-ring: oklch(0.745 0.16 65);
+/* Neutral icon holder (kept as a class so call sites stay simple). */
+@utility icon-tile {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
 }
 
-html[data-theme="rose"] {
-  --primary: oklch(0.645 0.22 16);
-  --primary-foreground: oklch(0.985 0 0);
-  --primary-hover: oklch(0.71 0.2 16);
-  --primary-soft: oklch(0.645 0.22 16 / 0.12);
-  --primary-soft-2: oklch(0.645 0.22 16 / 0.22);
-  --ring: oklch(0.645 0.22 16);
-  --chart-1: oklch(0.645 0.22 16);
-  --chart-2: oklch(0.7 0.18 340);
-  --sidebar-primary: oklch(0.645 0.22 16);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-ring: oklch(0.645 0.22 16);
+/* Semantic colour scope for small dots / text: `tile-success` etc. set
+ * `--tile`; `bg-tile` / `text-tile` read it. */
+@utility tile-success {
+  --tile: var(--success);
+}
+@utility tile-warning {
+  --tile: var(--warning);
+}
+@utility tile-danger {
+  --tile: var(--danger);
+}
+@utility tile-info {
+  --tile: var(--info);
+}
+@utility tile-neutral {
+  --tile: var(--faint);
+}
+@utility text-tile {
+  color: var(--tile, var(--muted-foreground));
+}
+@utility bg-tile {
+  background-color: var(--tile, var(--faint));
+}
+
+/* Very subtle shimmer skeleton. */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--muted);
+  border-radius: 6px;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--foreground) 3%, transparent),
+      transparent
+    );
+    animation: var(--animate-shimmer);
+  }
+}
+
+/* Max-width page container — every dashboard page sits in one. */
+@utility page-container {
+  width: 100%;
+  max-width: 88rem;
+  margin-inline: auto;
+  min-width: 0;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
   html {
     @apply font-sans;
+    font-feature-settings: "cv11";
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  /* Metrics and tables line up. */
+  .tabular-nums,
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+  :where(
+      a,
+      button,
+      [role="button"],
+      [role="tab"],
+      [role="menuitem"],
+      [role="option"],
+      summary,
+      [tabindex]
+    ):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+}
+
+/* Motion: short opacity/colour transitions only. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

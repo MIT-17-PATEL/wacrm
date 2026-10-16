@@ -173,7 +173,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         // Flash overrides hover/selected colors briefly. Tailwind's
         // built-in `animate-pulse` is too gentle; a ring with the
         // amber accent matches the list view's flash semantics.
-        isFlashed && '!border-amber-400 ring-2 ring-amber-400/60'
+        isFlashed && '!border-warning/40 ring-2 ring-warning/60'
       )}
     >
       {hasTarget && (
@@ -192,13 +192,13 @@ function FlowNodeCard({ data, selected }: NodeProps) {
           className="rounded-md"
         />
         <span
-          className="truncate text-[10.5px] font-semibold tracking-wider uppercase"
+          className="truncate text-[10.5px] font-semibold "
           style={{ color: c.text }}
         >
           {t(`nodes.${node.node_type}.label`)}
         </span>
         {isEntry && (
-          <span className="border-border text-muted-foreground ml-auto rounded border px-1.5 py-0.5 text-[8.5px] font-bold tracking-[0.1em] uppercase">
+          <span className="border-border text-muted-foreground ml-auto rounded border px-1.5 py-0.5 text-[8.5px] font-semibold ">
             {t('badgeEntry')}
           </span>
         )}
@@ -635,10 +635,10 @@ function NodeEditSheet({
         <SheetHeader className="border-border flex-row items-center gap-3 space-y-0 border-b px-5 py-4">
           <NodeIconChip type={node.node_type} size={36} iconSize={18} />
           <div className="min-w-0 flex-1">
-            <SheetTitle className="flex items-center gap-2 text-[11px] font-semibold tracking-wider uppercase">
+            <SheetTitle className="flex items-center gap-2 text-[11px] font-semibold ">
               <span style={{ color: c.text }}>{t(`nodes.${node.node_type}.label`)}</span>
               {isEntry && (
-                <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-emerald-300 uppercase">
+                <span className="rounded bg-success/15 px-1.5 py-0.5 text-[9px] font-semibold text-success ">
                   {t('badgeEntry')}
                 </span>
               )}
@@ -673,7 +673,7 @@ function NodeEditSheet({
             variant="ghost"
             size="sm"
             onClick={onDelete}
-            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            className="text-danger hover:bg-danger/10 hover:text-danger"
           >
             <Trash2 className="h-3.5 w-3.5" />
             {t('deleteNode')}
@@ -753,7 +753,7 @@ function CanvasAddNodeButton({ t }: { t: ReturnType<typeof useTranslations> }) {
           <Fragment key={group.id}>
             {i > 0 && <DropdownMenuSeparator />}
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-muted-foreground px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase">
+              <DropdownMenuLabel className="text-muted-foreground px-2 py-1.5 text-[11px] font-semibold ">
                 {t(`categories.${group.id}`)}
               </DropdownMenuLabel>
               {group.types.map((t_type) => {

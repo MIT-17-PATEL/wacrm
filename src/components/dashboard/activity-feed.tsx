@@ -3,17 +3,16 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import {
-  MessageSquare,
+  Megaphone,
+  MessagesSquare,
+  SquareKanban,
   UserPlus,
-  Briefcase,
-  Radio,
   Zap,
-  Inbox,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { ActivityItem, ActivityKind } from '@/lib/dashboard/types'
 import { cn } from '@/lib/utils'
-import { EmptyState } from './empty-state'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from './skeleton'
 
 interface ActivityFeedProps {
@@ -26,16 +25,15 @@ type PageSize = (typeof PAGE_SIZES)[number]
 
 interface KindTheme {
   icon: ComponentType<{ className?: string }>
-  /** Tailwind classes for the round icon badge + label color. */
-  badge: string
+
 }
 
 const KIND_THEME: Record<ActivityKind, KindTheme> = {
-  message: { icon: MessageSquare, badge: 'bg-blue-500/10 text-blue-400' },
-  contact: { icon: UserPlus, badge: 'bg-primary/10 text-primary' },
-  deal: { icon: Briefcase, badge: 'bg-primary/10 text-primary' },
-  broadcast: { icon: Radio, badge: 'bg-amber-500/10 text-amber-400' },
-  automation: { icon: Zap, badge: 'bg-rose-500/10 text-rose-400' },
+  message: { icon: MessagesSquare },
+  contact: { icon: UserPlus },
+  deal: { icon: SquareKanban },
+  broadcast: { icon: Megaphone },
+  automation: { icon: Zap },
 }
 
 import { useTranslations } from 'next-intl'
@@ -57,12 +55,14 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
     i === 0 || totalLoaded > PAGE_SIZES[i - 1]
 
   return (
-    <section className="rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-5 py-4">
-        <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+    <section className="surface flex h-full flex-col">
+      <header className="flex items-center justify-between px-5 pt-5 pb-2">
+        <div className="flex items-center gap-3">
+          <h2 className="text-[15px] font-semibold text-foreground">{t('title')}</h2>
+        </div>
         <Link
           href="/inbox"
-          className="text-xs font-medium text-primary hover:text-primary/80"
+          className="rounded-md text-xs font-semibold text-primary hover:underline"
         >
           {t('viewAll')}
         </Link>
@@ -77,30 +77,24 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
       ) : items.length === 0 ? (
         <div className="p-5">
           <EmptyState
-            icon={Inbox}
+            compact
+            illustration="chart"
             title={t('noActivity')}
-            hint={t('noActivityHint')}
+            description={t('noActivityHint')}
           />
         </div>
       ) : (
         <>
-          <ul className="divide-y divide-border">
-            {visible.map((it, i) => {
+          <ol className="relative flex-1 px-5 py-2">
+            {/* Timeline rail */}
+            <span aria-hidden className="absolute top-4 bottom-4 left-[32px] w-px bg-border" />
+            {visible.map((it) => {
               const theme = KIND_THEME[it.kind]
               const Icon = theme.icon
-              // Alternating row background for scanability. bg-muted/40
-              // keeps the stripe visible in both light and dark modes
-              // (bg-card/40 vanishes against a white card surface in light).
-              const stripe = i % 2 === 0 ? 'bg-transparent' : 'bg-muted/40'
               const row = (
-                <div className="flex items-center gap-3 px-5 py-2.5">
-                  <span
-                    className={cn(
-                      'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full',
-                      theme.badge,
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-3 rounded-xl px-1 py-2 transition-colors hover:bg-muted/40">
+                  <span className="relative z-10 flex size-6 items-center justify-center rounded-full border border-border bg-card">
+                    <Icon className="size-3 text-muted-foreground" />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm text-foreground">
                     {it.text}
@@ -111,9 +105,9 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
                 </div>
               )
               return (
-                <li key={it.id} className={cn(stripe, 'transition-colors hover:bg-muted/40')}>
+                <li key={it.id}>
                   {it.href ? (
-                    <Link href={it.href} className="block">
+                    <Link href={it.href} className="block rounded-xl">
                       {row}
                     </Link>
                   ) : (
@@ -122,7 +116,7 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
                 </li>
               )
             })}
-          </ul>
+          </ol>
           <footer className="flex items-center justify-between border-t border-border px-5 py-3 text-xs">
             <span className="text-muted-foreground tabular-nums">
               {t('showingOf', { visible: visible.length, totalLoaded, plus: totalLoaded === 50 ? '+' : '' })}
@@ -140,7 +134,7 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
                     className={cn(
                       'rounded-md px-2 py-1 font-medium tabular-nums transition-colors',
                       pageSize === size
-                        ? 'bg-secondary text-secondary-foreground'
+                        ? 'bg-accent text-foreground'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                       disabled && 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground',
                     )}

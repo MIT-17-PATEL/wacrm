@@ -25,6 +25,7 @@ import {
   type InteractiveMessagePayload,
 } from "@/lib/whatsapp/interactive";
 import type { QuickReply, QuickReplyKind } from "@/types";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface DraftState {
   id?: string;
@@ -45,6 +46,7 @@ function emptyDraft(): DraftState {
 
 export function QuickRepliesManager() {
   const t = useTranslations("Settings.quickReplies");
+  const confirmDialog = useConfirm();
   const [items, setItems] = useState<QuickReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<DraftState | null>(null);
@@ -114,7 +116,7 @@ export function QuickRepliesManager() {
 
   const remove = useCallback(
     async (id: string) => {
-      if (!window.confirm(t("deleteConfirm"))) return;
+      if (!(await confirmDialog({ title: t("deleteConfirm") }))) return;
       const res = await fetch(`/api/quick-replies/${id}`, { method: "DELETE" });
       if (!res.ok) {
         toast.error(t("deleteError"));
@@ -122,7 +124,7 @@ export function QuickRepliesManager() {
       }
       await load();
     },
-    [load, t],
+    [confirmDialog, load, t],
   );
 
   return (
@@ -154,7 +156,7 @@ export function QuickRepliesManager() {
               className="flex items-start gap-3 rounded-lg border border-border bg-card p-3"
             >
               {qr.kind === "interactive" ? (
-                <Zap className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <Zap className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               ) : (
                 <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               )}
@@ -174,7 +176,7 @@ export function QuickRepliesManager() {
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => remove(qr.id)}
-                  className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                  className="text-danger hover:bg-danger/10 hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -257,7 +259,7 @@ function KindTab({
       onClick={onClick}
       className={
         active
-          ? "flex-1 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
+          ? "flex-1 rounded-md border border-primary bg-accent px-3 py-1.5 text-sm font-medium text-primary"
           : "flex-1 rounded-md border border-border bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
       }
     >

@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -43,6 +42,11 @@ import {
 import { useTranslations } from 'next-intl';
 import { contactHandle } from '@/lib/whatsapp/wa-identity';
 import { parseInternationalPhone } from '@/lib/whatsapp/phone-utils';
+import Link from 'next/link';
+import { MessagesSquare } from 'lucide-react';
+import { buttonVariants } from '@/components/ui/button';
+import { ContactAvatar } from '@/components/ui/contact-avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ContactDetailViewProps {
   open: boolean;
@@ -63,6 +67,26 @@ export function ContactDetailView({
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
+  // The contact's conversation, if any — powers the "Open chat" button.
+  const [conversationId, setConversationId] = useState<{ contactId: string; id: string | null } | null>(null);
+  useEffect(() => {
+    if (!contactId) return;
+    let cancelled = false;
+    void supabase
+      .from('conversations')
+      .select('id')
+      .eq('contact_id', contactId)
+      .order('last_message_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setConversationId({ contactId, id: (data?.id as string | undefined) ?? null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [contactId, supabase]);
+  const chatId = conversationId?.contactId === contactId ? conversationId.id : null;
   const [copiedPhone, setCopiedPhone] = useState(false);
 
   // Send template — lets the business initiate (or re-open) a conversation
@@ -378,16 +402,6 @@ export function ContactDetailView({
     }
   }
 
-  function getInitials(name?: string | null) {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  }
-
   return (
     <>
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -396,21 +410,34 @@ export function ContactDetailView({
         className="bg-popover border-border text-popover-foreground sm:max-w-lg w-full p-0"
       >
         {loading || !contact ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="size-6 animate-spin text-primary" />
+          <div className="space-y-4 p-5" aria-busy>
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-14 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-56" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-40 rounded-lg" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
           </div>
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
-            <SheetHeader className="p-4 border-b border-border/50">
-              <div className="flex items-center gap-3">
-                <Avatar className="size-12 bg-muted border border-border">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                    {getInitials(contact.name)}
-                  </AvatarFallback>
-                </Avatar>
+            <SheetHeader className="relative overflow-hidden border-b border-border p-5">
+              {/* Soft accent wash behind the profile header. */}
+              <span aria-hidden className="bg-muted pointer-events-none absolute inset-x-0 top-0 h-20" />
+              <div className="relative flex items-center gap-3">
+                <ContactAvatar
+                  name={contact.name || contact.phone || '?'}
+                  seed={contact.id}
+                  src={contact.avatar_url}
+                  size="lg"
+                  className="size-14 shadow-card ring-4 ring-popover"
+                />
                 <div className="flex-1 min-w-0">
-                  <SheetTitle className="text-popover-foreground truncate">
+                  <SheetTitle className="truncate text-lg font-semibold text-popover-foreground">
                     {contact.name || t('unnamed')}
                   </SheetTitle>
                   <SheetDescription className="text-muted-foreground text-xs mt-0.5">
@@ -424,7 +451,7 @@ export function ContactDetailView({
                       <Phone className="size-3" />
                       {contactHandle(contact)}
                       {copiedPhone ? (
-                        <Check className="size-3 text-primary" />
+                        <Check className="size-3 text-muted-foreground" />
                       ) : (
                         <Copy className="size-3" />
                       )}
@@ -444,12 +471,20 @@ export function ContactDetailView({
                   </div>
                 </div>
               </div>
-              <div className="mt-3">
+              <div className="relative mt-4 flex flex-wrap gap-2">
+                {chatId ? (
+                  <Link
+                    href={`/inbox?c=${chatId}`}
+                    className={buttonVariants({ size: 'sm', variant: 'soft' })}
+                  >
+                    <MessagesSquare className="size-4" />
+                    {t('openChat')}
+                  </Link>
+                ) : null}
                 <Button
                   size="sm"
                   onClick={() => setTemplatePickerOpen(true)}
                   disabled={sendingTemplate}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   {sendingTemplate ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -509,7 +544,7 @@ export function ContactDetailView({
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-muted-foreground text-xs">
-                      {t('phone')} <span className="text-red-400">*</span>
+                      {t('phone')} <span className="text-danger">*</span>
                     </Label>
                     <Input
                       value={editPhone}
@@ -569,8 +604,8 @@ export function ContactDetailView({
                             onClick={() => toggleTag(tag.id)}
                             disabled={savingTags}
                             className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
-                              selected
-                                ? 'ring-2 ring-primary ring-offset-1 ring-offset-border'
+ selected
+ ? 'ring-2 ring-primary ring-offset-1 ring-offset-border'
                                 : 'opacity-50 hover:opacity-80'
                             }`}
                             style={{
@@ -633,7 +668,7 @@ export function ContactDetailView({
                           </p>
                           <button
                             onClick={() => deleteNote(note.id)}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all cursor-pointer shrink-0"
+                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger transition-all cursor-pointer shrink-0"
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -704,7 +739,7 @@ export function ContactDetailView({
               <TabsContent value="deals" className="flex-1 overflow-y-auto px-4 py-3">
                 {loadingDeals ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="size-5 animate-spin text-primary" />
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : deals.length === 0 ? (
                   <p className="text-xs text-muted-foreground">{t('dealsTab.noDeals')}</p>
@@ -744,7 +779,7 @@ export function ContactDetailView({
                               className={
                                 deal.status === 'won'
                                   ? 'text-primary'
-                                  : 'text-red-400'
+                                  : 'text-danger'
                               }
                             >
                               {deal.status}

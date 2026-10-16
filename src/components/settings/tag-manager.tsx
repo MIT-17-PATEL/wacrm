@@ -154,7 +154,7 @@ export function TagManager() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-foreground">
-          <TagIcon className="size-4 text-primary" />
+          <TagIcon className="size-4 text-muted-foreground" />
           {t('tagsTitle')}
         </CardTitle>
         <CardDescription className="text-muted-foreground">
@@ -164,7 +164,7 @@ export function TagManager() {
       <CardContent className="space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-primary" />
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <>

@@ -33,6 +33,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 
 /**
  * Flows list page.
@@ -64,8 +69,8 @@ const STATUS_LABELS = (t: ReturnType<typeof useTranslations>): Record<FlowRow["s
 });
 
 const STATUS_COLORS: Record<FlowRow["status"], string> = {
-  draft: "border-border bg-muted text-muted-foreground",
-  active: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
+  draft: "border-warning/30 bg-warning/10 text-warning",
+  active: "border-success/30 bg-success/10 text-success",
   archived: "border-border bg-muted/50 text-muted-foreground",
 };
 
@@ -88,6 +93,7 @@ export default function FlowsPage() {
   const router = useRouter();
   const canCreate = useCan("send-messages");
   const t = useTranslations("Flows.list");
+  const confirmDialog = useConfirm();
   const tGate = useTranslations("GatedButton");
   const [flows, setFlows] = useState<FlowRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,7 +187,7 @@ export default function FlowsPage() {
   }
 
   async function handleDelete(flow: FlowRow) {
-    const yes = window.confirm(t("deleteConfirm", { name: flow.name }));
+    const yes = await confirmDialog({ title: t("deleteConfirm", { name: flow.name }) });
     if (!yes) return;
     try {
       const res = await fetch(`/api/flows/${flow.id}`, { method: "DELETE" });
@@ -194,40 +200,64 @@ export default function FlowsPage() {
     }
   }
 
+  async function handleToggle(flow: FlowRow, active: boolean) {
+    const next = active ? "active" : "draft";
+    setFlows((prev) => prev.map((f) => (f.id === flow.id ? { ...f, status: next } : f)));
+    const res = await fetch(`/api/flows/${flow.id}/activate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next }),
+    });
+    if (!res.ok) {
+      setFlows((prev) => prev.map((f) => (f.id === flow.id ? { ...f, status: flow.status } : f)));
+      const json = await res.json().catch(() => ({}));
+      toast.error(json.error ?? t("toggleError"));
+      return;
+    }
+    toast.success(active ? t("activated") : t("paused"));
+  }
+
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="space-y-6" aria-busy>
+        <Skeleton className="h-14 w-72 rounded-2xl" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-60 rounded-2xl" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-foreground">{t("title")}</h1>
-            <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+    <div className="space-y-6">
+      <PageHeader
+        tile=""
+        icon={Workflow}
+        title={
+          <span className="inline-flex items-center gap-2">
+            {t("title")}
+            <span className="rounded-full bg-muted px-2 py-0.5 align-middle text-[11px] font-semibold text-foreground ring-1 ring-border ring-inset">
               {t("beta")}
             </span>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("description")}
-          </p>
-        </div>
-        <GatedButton
-          canAct={canCreate}
-          gateReason={tGate("reasons.createFlows")}
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          {t("newFlow")}
-        </GatedButton>
-      </header>
+          </span>
+        }
+        description={t("description")}
+        actions={
+          <GatedButton
+            canAct={canCreate}
+            gateReason={tGate("reasons.createFlows")}
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            {t("newFlow")}
+          </GatedButton>
+        }
+      />
 
       {flows.length === 0 ? (
-        <EmptyState
+        <FlowsEmptyState
           onCreate={() => setCreateOpen(true)}
           canCreate={canCreate}
           t={t}
@@ -240,6 +270,8 @@ export default function FlowsPage() {
               flow={flow}
               onEdit={() => router.push(`/flows/${flow.id}`)}
               onDelete={() => handleDelete(flow)}
+              onToggle={(active) => handleToggle(flow, active)}
+              canEdit={canCreate}
               t={t}
             />
           ))}
@@ -261,7 +293,7 @@ export default function FlowsPage() {
 
           {templates.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t("startTemplate")}
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -273,9 +305,11 @@ export default function FlowsPage() {
                       type="button"
                       onClick={() => handleUseTemplate(template.slug)}
                       disabled={creating}
-                      className="flex flex-col gap-2.5 rounded-lg border border-border bg-background p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted disabled:opacity-50"
+                      className="surface surface-hover flex flex-col gap-2.5 p-4 text-left disabled:opacity-50"
                     >
-                      <Icon className="h-5 w-5 text-primary" />
+                      <span className="icon-tile size-9 rounded-xl">
+                        <Icon className="h-5 w-5" />
+                      </span>
                       <span className="text-sm font-semibold text-popover-foreground">
                         {template.name}
                       </span>
@@ -293,7 +327,7 @@ export default function FlowsPage() {
           )}
 
           <div className="space-y-2 border-t border-border pt-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {t("startBlank")}
             </p>
             <Input
@@ -326,7 +360,7 @@ export default function FlowsPage() {
   );
 }
 
-function EmptyState({
+function FlowsEmptyState({
   onCreate,
   canCreate,
   t,
@@ -337,25 +371,22 @@ function EmptyState({
 }) {
   const tGate = useTranslations("GatedButton");
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <Workflow className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <h2 className="mt-4 text-base font-medium text-foreground">
-        {t("emptyTitle")}
-      </h2>
-      <p className="mt-1 max-w-md text-sm text-muted-foreground">
-        {t("emptyDesc")}
-      </p>
-      <GatedButton
-        canAct={canCreate}
-        gateReason={tGate("reasons.createFlows")}
-        onClick={onCreate}
-        className="mt-5"
-      >
-        <Plus className="h-4 w-4" />
-        {t("createFirst")}
-      </GatedButton>
+    <div className="surface ">
+      <EmptyState
+        illustration="flow"
+        title={t("emptyTitle")}
+        description={t("emptyDesc")}
+        action={
+          <GatedButton
+            canAct={canCreate}
+            gateReason={tGate("reasons.createFlows")}
+            onClick={onCreate}
+          >
+            <Plus className="h-4 w-4" />
+            {t("createFirst")}
+          </GatedButton>
+        }
+      />
     </div>
   );
 }
@@ -364,14 +395,22 @@ function FlowCard({
   flow,
   onEdit,
   onDelete,
+  onToggle,
+  canEdit,
   t,
 }: {
   flow: FlowRow;
   onEdit: () => void;
   onDelete: () => void;
+  onToggle: (active: boolean) => void;
+  canEdit: boolean;
   t: ReturnType<typeof useTranslations>;
 }) {
   const triggerSummary = describeTrigger(flow, t);
+  const keywords =
+    flow.trigger_type === "keyword" && Array.isArray(flow.trigger_config.keywords)
+      ? (flow.trigger_config.keywords as string[])
+      : [];
   const StatusIcon =
     flow.status === "active"
       ? PlayCircle
@@ -379,53 +418,108 @@ function FlowCard({
         ? Archive
         : PauseCircle;
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-card p-4 transition-colors hover:border-border">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <Workflow className="h-4 w-4 shrink-0 text-primary" />
-          <h3 className="truncate text-sm font-semibold text-foreground">
-            {flow.name}
-          </h3>
+    <div className="surface surface-hover group flex flex-col overflow-hidden">
+      {/* Mini flow preview (decorative): trigger → message → branches. */}
+      <button
+        type="button"
+        onClick={onEdit}
+        aria-label={`${t("edit")} ${flow.name}`}
+        className="bg-muted relative block h-28 w-full overflow-hidden"
+      >
+        <MiniFlowGraph active={flow.status === "active"} />
+      </button>
+
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="min-w-0 truncate font-semibold text-foreground">{flow.name}</h3>
+          <Badge
+            variant="outline"
+            className={cn("shrink-0 gap-1 text-[10px]", STATUS_COLORS[flow.status])}
+          >
+            <StatusIcon className="h-3 w-3" />
+            {STATUS_LABELS(t)[flow.status]}
+          </Badge>
         </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            "shrink-0 gap-1 text-[10px]",
-            STATUS_COLORS[flow.status],
-          )}
-        >
-          <StatusIcon className="h-3 w-3" />
-          {STATUS_LABELS(t)[flow.status]}
-        </Badge>
-      </div>
 
-      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
-        {flow.description || triggerSummary}
-      </p>
+        {keywords.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {keywords.slice(0, 4).map((k) => (
+              <span
+                key={k}
+                className="rounded-full border border-border-strong bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-tile"
+              >
+                {k}
+              </span>
+            ))}
+            {keywords.length > 4 ? (
+              <span className="text-[11px] text-muted-foreground">+{keywords.length - 4}</span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+            {flow.description || triggerSummary}
+          </p>
+        )}
 
-      <div className="mt-4 flex items-center gap-3 text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <MessageSquare className="h-3 w-3" />
-          {t("runCount", { count: flow.execution_count })}
-        </span>
-      </div>
+        <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="tabular-nums">{t("runCount", { count: flow.execution_count })}</span>
+          </span>
+          {flow.status !== "archived" ? (
+            <label className="ml-auto inline-flex items-center gap-2 font-medium">
+              {flow.status === "active" ? t("statusActive") : t("pausedLabel")}
+              <Switch
+                checked={flow.status === "active"}
+                onCheckedChange={(v) => onToggle(!!v)}
+                disabled={!canEdit}
+                aria-label={flow.status === "active" ? t("pause") : t("activate")}
+              />
+            </label>
+          ) : null}
+        </div>
 
-      <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
-        <Button variant="ghost" size="sm" onClick={onEdit}>
-          <Pencil className="h-3.5 w-3.5" />
-          {t("edit")}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDelete}
-          className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          {t("delete")}
-        </Button>
+        <div className="mt-3 flex items-center justify-end gap-1 border-t border-border pt-3">
+          <Button variant="ghost" size="sm" onClick={onEdit}>
+            <Pencil className="h-3.5 w-3.5" />
+            {t("edit")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="text-danger hover:bg-danger/10 hover:text-danger"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {t("delete")}
+          </Button>
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Tiny decorative node graph in the Flows accent. */
+function MiniFlowGraph({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 240 112" className="text-tile absolute inset-0 h-full w-full" aria-hidden>
+      <path
+        d="M120 34 V48 M120 62 V70 H64 V78 M120 70 H176 V78"
+        stroke="currentColor"
+        strokeOpacity="0.5"
+        strokeWidth="2"
+        fill="none"
+        strokeDasharray={active ? undefined : "4 4"}
+      />
+      <rect x="90" y="14" width="60" height="20" rx="7" fill="currentColor" />
+      <rect x="84" y="48" width="72" height="16" rx="6" fill="var(--card)" stroke="currentColor" strokeOpacity="0.45" />
+      <rect x="34" y="78" width="60" height="18" rx="6" fill="var(--card)" stroke="currentColor" strokeOpacity="0.45" />
+      <rect x="146" y="78" width="60" height="18" rx="6" fill="var(--card)" stroke="currentColor" strokeOpacity="0.45" />
+      <rect x="100" y="21" width="40" height="6" rx="3" fill="var(--card)" opacity="0.8" />
+      <rect x="96" y="53" width="40" height="5" rx="2.5" fill="currentColor" opacity="0.4" />
+      <rect x="44" y="84" width="30" height="5" rx="2.5" fill="currentColor" opacity="0.35" />
+      <rect x="156" y="84" width="30" height="5" rx="2.5" fill="currentColor" opacity="0.35" />
+    </svg>
   );
 }
 

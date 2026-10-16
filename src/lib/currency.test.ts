@@ -63,3 +63,15 @@ describe("formatCurrencyShort", () => {
     expect(formatCurrencyShort(1_000, "ZZZ")).toBe("ZZZ 1.0k");
   });
 });
+
+describe("Indian rupee formatting", () => {
+  it("uses lakh / crore in the short form", () => {
+    expect(formatCurrencyShort(1_250_000, "INR")).toBe("₹12.5L");
+    expect(formatCurrencyShort(32_000_000, "INR")).toBe("₹3.2Cr");
+    expect(formatCurrencyShort(99_000, "INR")).toBe("₹99.0k");
+  });
+
+  it("groups full amounts the Indian way", () => {
+    expect(formatCurrency(1_234_567, "INR")).toBe("₹12,34,567");
+  });
+});

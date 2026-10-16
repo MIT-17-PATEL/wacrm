@@ -269,7 +269,7 @@ export function AiConfig() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" /> {t('providerAndKey')}
+              <Sparkles className="h-4 w-4 text-muted-foreground" /> {t('providerAndKey')}
             </CardTitle>
             <CardDescription>
               {t('encryptionNotice')}

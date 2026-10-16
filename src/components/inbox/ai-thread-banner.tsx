@@ -141,6 +141,8 @@ export function AiThreadBanner({
   if (paused) {
     return (
       <Banner tone="muted">
+        {/* Rendered like a system message in the chat: the bot handed off. */}
+        <Hand className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <p className="font-medium text-foreground">{t("pausedTitle")}</p>
           {handoffSummary && (
@@ -163,7 +165,7 @@ export function AiThreadBanner({
   return (
     <Banner tone="primary">
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
+        <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className="truncate font-medium text-foreground">
           {t("activeText")}
         </span>
@@ -186,9 +188,7 @@ function Banner({
     <div
       className={cn(
         "flex items-center gap-3 border-b px-3 py-2 text-xs sm:px-4",
-        tone === "primary"
-          ? "border-primary/20 bg-primary/5"
-          : "border-border bg-muted/40",
+        "border-border bg-background",
       )}
     >
       {children}
@@ -212,7 +212,7 @@ function BannerButton({
       type="button"
       onClick={onClick}
       disabled={busy}
-      className="inline-flex flex-shrink-0 items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+      className="inline-flex flex-shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
     >
       {busy ? (
         <Loader2 className="h-3 w-3 animate-spin" />

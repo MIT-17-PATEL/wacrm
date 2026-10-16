@@ -465,8 +465,8 @@ export function ImportModal({
           >
             {file ? (
               <>
-                <div className="bg-primary/15 ring-primary/25 flex size-10 items-center justify-center rounded-lg ring-1">
-                  <FileText className="text-primary size-5" />
+                <div className="bg-accent ring-primary/25 flex size-10 items-center justify-center rounded-lg ring-1">
+                  <FileText className="text-muted-foreground size-5" />
                 </div>
                 <p
                   className="max-w-full truncate px-2 text-sm font-medium text-popover-foreground"
@@ -506,7 +506,7 @@ export function ImportModal({
           {preview.length > 0 && !result && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                <p className="text-[11px] font-semibold text-muted-foreground ">
                   {t('preview', { count: preview.length })}
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -618,14 +618,14 @@ export function ImportModal({
                   </div>
                 )}
                 {result.skipped > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-amber-400">
+                  <div className="flex items-center gap-1.5 text-sm text-warning">
                     <AlertTriangle className="size-4 shrink-0" />
                     {t('resultSkipped', { count: result.skipped })}
                   </div>
                 )}
                 {result.invalidPhone > 0 && (
                   <div className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 text-sm text-amber-400">
+                    <div className="flex items-center gap-1.5 text-sm text-warning">
                       <AlertTriangle className="size-4 shrink-0" />
                       {t('resultInvalidPhone', { count: result.invalidPhone })}
                     </div>
@@ -635,7 +635,7 @@ export function ImportModal({
                   </div>
                 )}
                 {result.failed > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-red-400">
+                  <div className="flex items-center gap-1.5 text-sm text-danger">
                     <XCircle className="size-4 shrink-0" />
                     {t('resultFailed', { count: result.failed })}
                   </div>
@@ -644,7 +644,7 @@ export function ImportModal({
 
               {result.failedDetails.length > 0 && (
                 <div className="mt-3 space-y-1 border-t border-border/80 pt-3">
-                  <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                  <p className="text-[11px] font-semibold text-muted-foreground ">
                     {t('failedRowsHeading')}
                   </p>
                   <ul className="max-h-32 space-y-1 overflow-y-auto text-xs">

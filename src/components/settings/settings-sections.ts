@@ -61,6 +61,21 @@ export const SECTION_META: Record<SettingsSection, SectionMeta> = {
   api: { id: 'api', label: 'API keys', icon: KeyRound, group: 'workspace' },
 };
 
+/** `tile-<accent>` class per section — colours its icon tile + hover glow. */
+export const SECTION_TILE: Record<SettingsSection, string> = {
+  overview: '',
+  profile: '',
+  security: 'tile-danger',
+  appearance: '',
+  whatsapp: '',
+  templates: '',
+  'quick-replies': '',
+  fields: '',
+  deals: '',
+  members: '',
+  api: 'tile-info',
+};
+
 export const RAIL_GROUPS: { label: string | null; group: SectionMeta['group'] }[] = [
   { label: null, group: 'top' },
   { label: 'Account', group: 'account' },

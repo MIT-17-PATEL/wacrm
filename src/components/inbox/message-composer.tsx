@@ -19,6 +19,7 @@ import {
   X,
   Loader2,
   Sparkles,
+  Smile,
   Plus,
   MessageSquareDashed,
   Zap,
@@ -242,9 +243,33 @@ export function MessageComposer({
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
+        return;
+      }
+      // "/" on an empty composer opens the quick-reply picker.
+      if (e.key === "/" && text === "") {
+        e.preventDefault();
+        setQuickReplyOpen(true);
       }
     },
-    [handleSend]
+    [handleSend, text]
+  );
+
+  // Insert an emoji (or any snippet) at the caret, then restore focus.
+  const insertAtCursor = useCallback(
+    (snippet: string) => {
+      const el = textareaRef.current;
+      const start = el?.selectionStart ?? text.length;
+      const end = el?.selectionEnd ?? text.length;
+      setText((prev) => prev.slice(0, start) + snippet + prev.slice(end));
+      requestAnimationFrame(() => {
+        if (!el) return;
+        el.focus();
+        const pos = start + snippet.length;
+        el.setSelectionRange(pos, pos);
+        adjustHeight();
+      });
+    },
+    [text.length, adjustHeight]
   );
 
   const handleChange = useCallback(
@@ -539,7 +564,7 @@ export function MessageComposer({
   // ---- Render --------------------------------------------------------
 
   return (
-    <div className="border-t border-border bg-card p-3">
+    <div className="border-t border-border bg-background p-3">
       {replyTo && (
         <div className="mb-2">
           <ReplyQuote
@@ -550,14 +575,14 @@ export function MessageComposer({
         </div>
       )}
       {sessionExpired && (
-        <div className="mb-2 flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
-          <p className="text-xs text-amber-400">
+        <div className="tile-warning mb-2 flex items-center justify-between gap-3 rounded-xl border border-border-strong bg-muted px-3 py-2">
+          <p className="text-xs font-medium text-foreground">
             {t("sessionExpiredHint")}
           </p>
           <Button
-            variant="ghost"
+            variant="soft"
             size="sm"
-            className="h-7 text-xs text-amber-400 hover:text-amber-300"
+            className="shrink-0"
             onClick={onOpenTemplates}
           >
             <LayoutTemplate className="mr-1 h-3 w-3" />
@@ -611,7 +636,7 @@ export function MessageComposer({
       ) : recording ? (
         // Recording bar — replaces the composer while the mic is live.
         <div className="flex items-center gap-3 rounded-xl border border-border bg-muted px-4 py-2.5">
-          <span className="flex h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-500" />
+          <span className="flex h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-danger-solid" />
           <span className="flex-1 text-sm text-foreground">
             {t("recording", { current: formatDuration(recordSeconds), max: formatDuration(MAX_RECORDING_SECONDS) })}
           </span>
@@ -644,7 +669,7 @@ export function MessageComposer({
                     ? undefined
                     : t("attachMedia")
               }
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md p-0 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -684,7 +709,7 @@ export function MessageComposer({
                     ? undefined
                     : t("moreActions")
               }
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md p-0 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
             </DropdownMenuTrigger>
@@ -700,13 +725,39 @@ export function MessageComposer({
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={inputsDisabled}
+              title={inputsDisabled ? undefined : t("emoji")}
+              aria-label={t("emoji")}
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
+            >
+              <Smile className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              aria-label={t("emojiPicker")}
+              className="grid w-72 grid-cols-8 gap-0.5 p-2"
+            >
+              {QUICK_EMOJIS.map((emoji) => (
+                <DropdownMenuItem
+                  key={emoji}
+                  onClick={() => insertAtCursor(emoji)}
+                  className="flex size-8 items-center justify-center p-0 text-lg"
+                >
+                  {emoji}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <GatedButton
             variant="ghost"
             size="sm"
             canAct={!readOnly}
             gateReason={tGate("reasons.sendMessages")}
             title={readOnly ? undefined : t("sendTemplate")}
-            className="h-9 w-9 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+            className="h-9 w-9 shrink-0 rounded-lg p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={onOpenTemplates}
           >
             <LayoutTemplate className="h-4 w-4" />
@@ -719,7 +770,7 @@ export function MessageComposer({
             gateReason={tGate("reasons.sendMessages")}
             disabled={drafting}
             title={readOnly ? undefined : t("draftWithAI")}
-            className="h-9 w-9 shrink-0 p-0 text-muted-foreground hover:text-primary"
+            className="h-9 w-9 shrink-0 rounded-lg p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={handleDraft}
           >
             {drafting ? (
@@ -748,7 +799,7 @@ export function MessageComposer({
             // The placeholder text also surfaces the read-only state.
             title={readOnly ? t("readOnlyTitle") : undefined}
             className={cn(
-              "flex-1 resize-none rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-colors focus:border-primary/50",
+              "flex-1 resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary",
               (sessionExpired || readOnly) && "cursor-not-allowed opacity-50"
             )}
           />
@@ -759,7 +810,8 @@ export function MessageComposer({
             gateReason={tGate("reasons.sendMessages")}
             disabled={!text.trim() || sessionExpired || sending}
             onClick={handleSend}
-            className="h-9 w-9 shrink-0 bg-primary p-0 hover:bg-primary/90 disabled:opacity-40"
+            aria-label={t("send")}
+            className="h-9 w-9 shrink-0 p-0 disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
           </GatedButton>
@@ -770,7 +822,7 @@ export function MessageComposer({
           `items-end` buttons below the textarea. Indented to line up
           under the textarea left edge. */}
       {!draft && !recording && (
-        <p className="mt-1 pl-[5.5rem] text-[10px] text-muted-foreground">
+        <p className="mt-1.5 hidden pl-1 text-[11px] text-muted-foreground sm:block">
           {t("draftHint")}
         </p>
       )}
@@ -817,6 +869,14 @@ export function MessageComposer({
     </div>
   );
 }
+
+/** A compact, business-friendly emoji set for the composer picker. */
+const QUICK_EMOJIS = [
+  "😊", "😀", "😂", "😍", "🙏", "👍", "👌", "👏",
+  "🎉", "🙌", "💯", "🔥", "✨", "❤️", "💚", "🤝",
+  "✅", "☑️", "❌", "⚠️", "📞", "📍", "📅", "⏰",
+  "🏠", "🏢", "🔑", "💰", "📄", "📸", "🚗", "😉",
+];
 
 /**
  * Staged-attachment preview with caption + send/discard. Declared at
@@ -890,7 +950,7 @@ function MediaDraftPreview({
               }
             }}
             placeholder={t("addCaption")}
-            className="flex-1 rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-colors focus:border-primary/50"
+            className="flex-1 rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
           />
         )}
         <GatedButton
@@ -900,7 +960,7 @@ function MediaDraftPreview({
           disabled={busy}
           onClick={onSend}
           className={cn(
-            "h-9 w-9 shrink-0 bg-primary p-0 hover:bg-primary/90 disabled:opacity-40",
+            "h-9 w-9 shrink-0 p-0 disabled:opacity-40",
             draft.kind === "audio" && "ml-auto",
           )}
         >
