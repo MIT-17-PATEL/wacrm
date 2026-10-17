@@ -90,6 +90,9 @@ export function WhatsAppConfig() {
   const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
   // Meta App (App ID + secret) is Owner/Admin only — the API enforces it too.
   const canManageMetaApp = useCan('edit-settings');
+  // With its own Meta App the workspace uses the per-workspace webhook URL,
+  // so the shared URL card and typed verify token are hidden.
+  const [ownMetaApp, setOwnMetaApp] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
@@ -829,6 +832,8 @@ export function WhatsAppConfig() {
               )}
             </div>
 
+            {/* Typed verify token: only for the shared webhook URL. */}
+            {!ownMetaApp && (
             <div className="space-y-2">
               <Label className="text-muted-foreground">{t('webhookVerifyToken')}</Label>
               <Input
@@ -852,6 +857,7 @@ export function WhatsAppConfig() {
                   : t('webhookVerifyTokenHint')}
               </p>
             </div>
+            )}
 
             <div className="space-y-2">
               <Label className="text-muted-foreground">
@@ -876,7 +882,8 @@ export function WhatsAppConfig() {
           </CardContent>
         </Card>
 
-        {/* Webhook URL */}
+        {/* Shared webhook URL — only while this workspace has no Meta App of its own (then the Meta App card shows its own URL). */}
+        {!ownMetaApp && (
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground">{t('webhookTitle')}</CardTitle>
@@ -905,8 +912,9 @@ export function WhatsAppConfig() {
             </div>
           </CardContent>
         </Card>
+        )}
 
-        {canManageMetaApp ? <MetaAppCard refreshKey={config ? `${config.phone_number_id}:${config.subscribed_apps_at ?? ''}:${config.connected_at ?? ''}` : null} /> : null}
+        {canManageMetaApp ? <MetaAppCard onConfiguredChange={setOwnMetaApp} refreshKey={config ? `${config.phone_number_id}:${config.subscribed_apps_at ?? ''}:${config.connected_at ?? ''}` : null} /> : null}
 
         {/* Attachment retention. Only meaningful once a number is
             connected, since it governs what the webhook does with

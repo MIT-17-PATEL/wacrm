@@ -2204,7 +2204,8 @@
         "secret_invalid": "Secret invalid",
         "token_app_mismatch": "Access token belongs to a different Meta App",
         "webhook_silent": "Webhook not receiving events"
-      }
+      },
+      "webhookAfterSave": "Save your App ID and App Secret to get this workspace's own Webhook URL and Verify token. Until then, Meta uses the shared Webhook Callback URL above."
     }
   },
   "SignupPage": {

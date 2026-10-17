@@ -2204,7 +2204,8 @@
         "secret_invalid": "시크릿 코드가 올바르지 않음",
         "token_app_mismatch": "액세스 토큰이 다른 Meta 앱에 속해 있습니다",
         "webhook_silent": "웹훅이 이벤트를 받지 못하고 있습니다"
-      }
+      },
+      "webhookAfterSave": "앱 ID와 앱 시크릿 코드를 저장하면 이 워크스페이스 전용 웹훅 URL과 확인 토큰이 표시됩니다. 그 전까지는 위의 공유 웹훅 콜백 URL이 사용됩니다."
     }
   },
   "SignupPage": {

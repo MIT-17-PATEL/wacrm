@@ -2204,7 +2204,8 @@
         "secret_invalid": "Chave inválida",
         "token_app_mismatch": "O token de acesso pertence a outro app da Meta",
         "webhook_silent": "O webhook não está recebendo eventos"
-      }
+      },
+      "webhookAfterSave": "Salve o ID e a chave secreta do app para obter a URL do webhook e o token de verificação próprios deste espaço. Até lá, a Meta usa a URL compartilhada acima."
     }
   },
   "SignupPage": {

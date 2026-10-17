@@ -42,7 +42,14 @@ const STATUS_TONE: Record<MetaAppView['status'], string> = {
  * 4 characters come back. "Replace secret" swaps in a new one (the old
  * one keeps verifying webhooks for 24h).
  */
-export function MetaAppCard({ refreshKey }: { refreshKey?: string | null }) {
+export function MetaAppCard({
+  refreshKey,
+  onConfiguredChange,
+}: {
+  refreshKey?: string | null;
+  /** Tells the page which webhook URL applies (own vs shared). */
+  onConfiguredChange?: (configured: boolean) => void;
+}) {
   const t = useTranslations('Settings.metaApp');
   const format = useFormatter();
   const [view, setView] = useState<MetaAppView | null>(null);
@@ -115,6 +122,12 @@ export function MetaAppCard({ refreshKey }: { refreshKey?: string | null }) {
       setTesting(false);
     }
   };
+
+  // Report own-vs-shared webhook mode to the page.
+  const configured = view?.configured ?? false;
+  useEffect(() => {
+    onConfiguredChange?.(configured);
+  }, [configured, onConfiguredChange]);
 
   if (loadError) {
     return (
@@ -257,15 +270,22 @@ export function MetaAppCard({ refreshKey }: { refreshKey?: string | null }) {
           </div>
         )}
 
-        {/* Webhook for this workspace's App */}
+        {/* Webhook for this workspace's App — shown once an App is saved;
+            until then the shared Webhook Configuration card applies. */}
         <div className="space-y-3 border-t border-border pt-5">
-          <CopyField label={t('webhookUrl')} value={view.webhookUrl} />
-          <CopyField label={t('verifyToken')} value={view.verifyToken} />
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>{t('step1')}</li>
-            <li>{t('step2')}</li>
-            <li>{t('step3')}</li>
-          </ol>
+          {view.configured ? (
+            <>
+              <CopyField label={t('webhookUrl')} value={view.webhookUrl} />
+              <CopyField label={t('verifyToken')} value={view.verifyToken} />
+              <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+                <li>{t('step1')}</li>
+                <li>{t('step2')}</li>
+                <li>{t('step3')}</li>
+              </ol>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t('webhookAfterSave')}</p>
+          )}
         </div>
 
         {/* Status + Test connection */}
