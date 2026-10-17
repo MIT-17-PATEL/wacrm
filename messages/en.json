@@ -485,7 +485,7 @@
     },
     "form": {
       "addTitle": "Add Contact",
-      "addDesc": "Create a new contact. Name is required.",
+      "addDesc": "Create a new contact. Phone number is required.",
       "editTitle": "Edit Contact",
       "editDesc": "Update contact details and tags.",
       "nameLabel": "Name",

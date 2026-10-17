@@ -48,36 +48,54 @@ describe("isUniqueViolation", () => {
 describe("dedupeByPhone", () => {
   it("keeps the first occurrence and counts in-file duplicates", () => {
     const { unique, duplicates } = dedupeByPhone([
-      { phone: "+1 555-1111", name: "A" },
-      { phone: "+1 (555) 1111", name: "B" }, // same digits as #1
-      { phone: "+1 555-2222", name: "C" },
+      { phone: "+1 415 555-1111", name: "A" },
+      { phone: "+1 (415) 555 1111", name: "B" }, // same digits as #1
+      { phone: "+1 415 555-2222", name: "C" },
     ]);
     expect(unique.map((r) => r.name)).toEqual(["A", "C"]);
     expect(duplicates).toBe(1);
   });
 
-  it("drops rows without a leading + (no country code), counted as invalid", () => {
-    // "4155551212" is a US national number to the person who exported the
-    // CSV, but Meta would deliver it to +41 (Switzerland). Refusing it here
-    // is the bulk-import half of issue #586.
+  it("normalizes numbers without country code using default country (defaults to IN)", () => {
     const { unique, duplicates, invalid } = dedupeByPhone([
-      { phone: "4155551212", name: "national" },
-      { phone: "+14155551212", name: "international" },
-      { phone: "14155551212", name: "digits with CC but no +" },
+      { phone: "9876543210", name: "Indian national" },
+      { phone: "+91 98765 43210", name: "Indian duplicate with formatting" },
+      { phone: "+14155552671", name: "US with code" },
     ]);
-    expect(unique.map((r) => r.name)).toEqual(["international"]);
-    expect(duplicates).toBe(0);
-    expect(invalid).toBe(2);
+    expect(unique).toHaveLength(2);
+    expect(unique[0].phone).toBe("+919876543210");
+    expect(unique[0].name).toBe("Indian national");
+    expect(unique[1].phone).toBe("+14155552671");
+    expect(duplicates).toBe(1);
+    expect(invalid).toBe(0);
   });
 
-  it("drops rows with no digits, counted as invalid rather than duplicate", () => {
+  it("normalizes numbers without country code using specified defaultCountry (e.g. US)", () => {
+    const { unique, duplicates, invalid } = dedupeByPhone(
+      [
+        { phone: "4155552671", name: "US national" },
+        { phone: "+1 (415) 555-2671", name: "US duplicate" },
+        { phone: "+919876543210", name: "Indian with code" },
+      ],
+      "US"
+    );
+    expect(unique).toHaveLength(2);
+    expect(unique[0].phone).toBe("+14155552671");
+    expect(duplicates).toBe(1);
+    expect(invalid).toBe(0);
+  });
+
+  it("drops invalid rows, counted as invalid rather than duplicate", () => {
     const { unique, duplicates, invalid } = dedupeByPhone([
       { phone: "   " },
-      { phone: "+1 555-3333" },
+      { phone: "123" },
+      { phone: "not-a-number" },
+      { phone: "+91 98765 43210" },
     ]);
     expect(unique).toHaveLength(1);
+    expect(unique[0].phone).toBe("+919876543210");
     expect(duplicates).toBe(0);
-    expect(invalid).toBe(1);
+    expect(invalid).toBe(3);
   });
 });
 

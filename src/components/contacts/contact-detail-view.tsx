@@ -41,12 +41,13 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { contactHandle } from '@/lib/whatsapp/wa-identity';
-import { parseInternationalPhone } from '@/lib/whatsapp/phone-utils';
 import Link from 'next/link';
 import { MessagesSquare } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { ContactAvatar } from '@/components/ui/contact-avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { normalizePhoneNumber } from '@/lib/phone-normalize';
 
 interface ContactDetailViewProps {
   open: boolean;
@@ -234,17 +235,19 @@ export function ContactDetailView({
     // digits-only form the inbound webhook stores — are left alone so a
     // name/email edit is never blocked by the phone field.
     const phoneChanged = editPhone.trim() !== (contact?.phone ?? '');
-    if (phoneChanged && !parseInternationalPhone(editPhone)) {
+    const normalized = normalizePhoneNumber(editPhone);
+    if (phoneChanged && !normalized) {
       toast.error(t('toastPhoneNeedsCountryCode'));
       return;
     }
+    const phoneToSave = normalized ? normalized.e164 : editPhone.trim();
 
     setSavingDetails(true);
     const { error } = await supabase
       .from('contacts')
       .update({
         name: editName.trim() || null,
-        phone: editPhone.trim(),
+        phone: phoneToSave,
         email: editEmail.trim() || null,
         company: editCompany.trim() || null,
         updated_at: new Date().toISOString(),
@@ -546,10 +549,9 @@ export function ContactDetailView({
                     <Label className="text-muted-foreground text-xs">
                       {t('phone')} <span className="text-danger">*</span>
                     </Label>
-                    <Input
+                    <PhoneInput
                       value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
-                      className="bg-muted border-border text-foreground h-8 text-sm"
+                      onChange={setEditPhone}
                     />
                   </div>
                   <div className="space-y-1.5">

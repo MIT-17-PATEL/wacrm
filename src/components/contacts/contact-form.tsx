@@ -12,7 +12,8 @@ import {
   isUniqueViolation,
   type ExistingContact,
 } from '@/lib/contacts/dedupe';
-import { parseInternationalPhone } from '@/lib/whatsapp/phone-utils';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { normalizePhoneNumber } from '@/lib/phone-normalize';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -84,10 +84,9 @@ export function ContactForm({
   }, [open, contact]);
 
   // Look up an existing contact with this number (new contacts only).
-  // Runs on blur so we don't query on every keystroke.
-  async function checkDuplicate() {
+  async function checkDuplicate(val?: string) {
     if (isEdit || !accountId) return;
-    const value = phone.trim();
+    const value = (typeof val === 'string' ? val : phone).trim();
     if (!value) {
       setDupMatch(null);
       return;
@@ -138,10 +137,12 @@ export function ContactForm({
     // webhook store Meta's digits-only form, and editing their name must
     // not be blocked by a phone the user never touched.
     const phoneChanged = !isEdit || phone.trim() !== (contact?.phone ?? '');
-    if (phoneChanged && !parseInternationalPhone(phone)) {
+    const normalized = normalizePhoneNumber(phone);
+    if (phoneChanged && !normalized) {
       toast.error(t('phoneNeedsCountryCode'));
       return;
     }
+    const phoneToSave = normalized ? normalized.e164 : phone.trim();
 
     // Hard-block an exact duplicate on create (the DB unique index is
     // the real backstop; this avoids a round-trip + a raw error toast).
@@ -167,7 +168,7 @@ export function ContactForm({
           .from('contacts')
           .update({
             name: name.trim() || null,
-            phone: phone.trim(),
+            phone: phoneToSave,
             email: email.trim() || null,
             company: company.trim() || null,
             updated_at: new Date().toISOString(),
@@ -181,7 +182,7 @@ export function ContactForm({
             user_id: user.id,
             account_id: accountId,
             name: name.trim() || null,
-            phone: phone.trim(),
+            phone: phoneToSave,
             email: email.trim() || null,
             company: company.trim() || null,
           })
@@ -265,47 +266,40 @@ export function ContactForm({
             <Label htmlFor="cf-phone" className="text-muted-foreground">
               {t('phoneLabel')} <span className="text-danger">*</span>
             </Label>
-            <Input
+            <PhoneInput
               id="cf-phone"
               value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
+              onChange={(e164) => {
+                setPhone(e164);
                 if (dupMatch) setDupMatch(null);
+                if (e164) checkDuplicate(e164);
               }}
-              onBlur={checkDuplicate}
-              placeholder={t('phonePlaceholder')}
-              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+              onBlur={() => checkDuplicate(phone)}
             />
-            {dupMatch ? (
+            {dupMatch && (
               <div
                 className={`flex items-start gap-2 rounded-md border px-2.5 py-2 text-xs ${
- dupMatch.exact
- ? 'border-danger/40 bg-danger/10 text-danger'
+                  dupMatch.exact
+                    ? 'border-danger/40 bg-danger/10 text-danger'
                     : 'border-warning/40 bg-warning/10 text-warning'
                 }`}
               >
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
                 <div className="space-y-1">
                   <p>
-                    {dupMatch.exact
-                      ? t('dupExact')
-                      : t('dupSimilar')}
+                    {dupMatch.exact ? 'This number already exists — ' : t('dupSimilar')}{' '}
+                    {onViewExisting && (
+                      <button
+                        type="button"
+                        onClick={() => onViewExisting(dupMatch.contact.id)}
+                        className="font-medium underline underline-offset-2 hover:no-underline cursor-pointer"
+                      >
+                        open contact
+                      </button>
+                    )}
                   </p>
-                  {onViewExisting && (
-                    <button
-                      type="button"
-                      onClick={() => onViewExisting(dupMatch.contact.id)}
-                      className="font-medium underline underline-offset-2 hover:no-underline"
-                    >
-                      {t('viewExisting', { name: dupMatch.contact.name || dupMatch.contact.phone })}
-                    </button>
-                  )}
                 </div>
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {t('phoneHint')}
-              </p>
             )}
           </div>
 

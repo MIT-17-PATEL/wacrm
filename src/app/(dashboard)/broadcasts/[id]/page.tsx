@@ -35,7 +35,9 @@ import {
   Trash2,
   PlayCircle,
   RotateCcw,
+  MoreHorizontal,
 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
 import {
   getBroadcastStatus,
@@ -149,6 +151,7 @@ function downloadBlob(filename: string, content: string) {
 export default function BroadcastDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const t = useTranslations('Broadcasts.detail');
   const tStatus = useTranslations('Broadcasts.status');
   const broadcastId = params.id as string;
@@ -160,7 +163,6 @@ export default function BroadcastDetailPage() {
   const [statusFilter, setStatusFilter] = useState<RecipientStatus | 'all'>(
     'all',
   );
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [resumingScope, setResumingScope] = useState<
     'pending' | 'failed' | null
@@ -281,23 +283,35 @@ export default function BroadcastDetailPage() {
   }
 
   async function handleDelete() {
+    if (!broadcast || broadcast.status === 'sending') return;
+
+    const isScheduled = broadcast.status === 'scheduled';
+    const ok = await confirm({
+      title: `Delete "${broadcast.name}"?`,
+      description:
+        "This removes the broadcast and its stats from Neno Connect. Messages already delivered stay on customers' phones and in the Inbox.",
+      confirmLabel: isScheduled ? 'Cancel & delete' : 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
+
     setDeleting(true);
-    const supabase = createClient();
-    // broadcast_recipients cascades on broadcasts.id (migration 001), so a
-    // single delete is sufficient — the aggregate trigger in migration 003
-    // is defined on broadcast_recipients but fires only on its own row
-    // changes, not on a cascaded drop of the parent row.
-    const { error: delErr } = await supabase
-      .from('broadcasts')
-      .delete()
-      .eq('id', broadcastId);
-    setDeleting(false);
-    if (delErr) {
-      toast.error(t('toastFailedDelete', { error: delErr.message }));
-      return;
+    try {
+      const res = await fetch(`/api/whatsapp/broadcast/${broadcastId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || t('toastFailedDelete', { error: `HTTP ${res.status}` }));
+      }
+      toast.success('Broadcast deleted');
+      router.push('/broadcasts');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('toastFailedDelete', { error: 'Failed' }));
+    } finally {
+      setDeleting(false);
     }
-    toast.success(t('toastDeleted'));
-    router.push('/broadcasts');
   }
 
   if (loading) {
@@ -365,49 +379,44 @@ export default function BroadcastDetailPage() {
           </div>
         </div>
 
-        {/* Delete — inline-confirm pattern matches the pipeline-settings
-            "Delete Pipeline" flow. Mid-send broadcasts can't be deleted
-            because orphaning in-flight Meta messages would leave the
-            funnel inconsistent. */}
-        {confirmDelete ? (
-          <div className="flex items-center gap-2 rounded-md border border-danger/30 bg-danger/10 px-3 py-1.5 text-sm">
-            <span className="text-danger">{t('deletePrompt')}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setConfirmDelete(false)}
-              disabled={deleting}
-              className="h-7 border-border bg-transparent text-muted-foreground hover:bg-muted"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting}
-              variant="danger"
-              className="h-7"
-            >
-              {deleting ? t('deleting') : t('confirm')}
-            </Button>
-          </div>
-        ) : (
+        {/* Actions Menu */}
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            disabled={broadcast.status === 'sending'}
-            onClick={() => setConfirmDelete(true)}
-            title={
-              broadcast.status === 'sending'
-                ? t('cannotDeleteSending')
-                : t('deleteHover')
-            }
-            className="border-danger/30 bg-transparent text-danger hover:bg-danger/10 disabled:opacity-40"
+            onClick={handleExport}
+            disabled={recipients.length === 0}
+            className="border-border text-muted-foreground hover:bg-muted"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            {t('delete')}
+            <Download className="h-3.5 w-3.5" />
+            {t('exportCsv')}
           </Button>
-        )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-8 border-border text-muted-foreground hover:bg-muted cursor-pointer"
+                  aria-label="More options"
+                />
+              }
+            >
+              <MoreHorizontal className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 border-border bg-popover">
+              <DropdownMenuItem
+                disabled={broadcast.status === 'sending' || deleting}
+                onClick={handleDelete}
+                className="text-danger focus:bg-danger/10 focus:text-danger cursor-pointer gap-2"
+              >
+                <Trash2 className="size-3.5" />
+                {broadcast.status === 'scheduled' ? 'Cancel & delete' : t('delete')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Resume / retry (issue #472). Only rendered when there is

@@ -4,6 +4,7 @@ import {
   parseInternationalPhone,
   phonesMatch,
 } from "@/lib/whatsapp/phone-utils";
+import { normalizePhoneNumber, type CountryCode } from "@/lib/phone-normalize";
 
 /**
  * Contact de-duplication helpers, shared by the WhatsApp webhook, the
@@ -78,39 +79,77 @@ export function isUniqueViolation(error: unknown): boolean {
   return (error as { code?: string }).code === "23505";
 }
 
+
+export interface DedupeOptions {
+  /** Default country code used when phone lacks a country dial code. Defaults to 'IN'. */
+  defaultCountry?: CountryCode;
+  /** Strictly require leading '+' and country code (issue #586 for broadcast CSV). */
+  requireLeadingPlus?: boolean;
+  /** Preserve original string in row.phone instead of replacing with canonical E.164. */
+  preserveOriginalPhone?: boolean;
+}
+
 /**
  * De-duplicate parsed CSV rows by normalized phone, keeping the first
- * occurrence of each. Rows whose phone is not a usable international
- * number are dropped too, but counted separately as `invalid` rather
- * than folded into `duplicates` — they never duplicated anything, and
- * the import result should say so instead of telling the user a
- * contact with a real, unique number was skipped as a dupe.
+ * occurrence of each. Rows whose phone cannot be normalized to a valid
+ * number are dropped and counted separately as `invalid`.
  *
- * "Usable" means `parseInternationalPhone` accepts it: a leading `+`
- * and country code are required. A CSV of national-format numbers
- * ("4155551212") is the bulk version of issue #586 — every row would
- * be stored and later delivered to the wrong country — so those rows
- * are reported as invalid here, before anything is written.
+ * Numbers without a country code use `defaultCountry` (defaults to 'IN').
+ * Stored rows have their `phone` field normalized to canonical E.164 format
+ * unless `preserveOriginalPhone: true` is configured.
  */
 export function dedupeByPhone<T extends { phone: string }>(
   rows: T[],
+  optionsOrCountry: CountryCode | DedupeOptions = "IN"
 ): { unique: T[]; duplicates: number; invalid: number } {
+  const options: DedupeOptions =
+    typeof optionsOrCountry === "string"
+      ? { defaultCountry: optionsOrCountry }
+      : optionsOrCountry;
+
+  const defaultCountry = options.defaultCountry ?? "IN";
+  const requireLeadingPlus = options.requireLeadingPlus ?? false;
+  const preserveOriginalPhone = options.preserveOriginalPhone ?? false;
+
   const seen = new Set<string>();
   const unique: T[] = [];
   let duplicates = 0;
   let invalid = 0;
 
   for (const row of rows) {
-    const key = parseInternationalPhone(row.phone);
-    if (!key) {
+    if (requireLeadingPlus) {
+      const key = parseInternationalPhone(row.phone);
+      if (!key) {
+        invalid++;
+        continue;
+      }
+      if (seen.has(key)) {
+        duplicates++;
+        continue;
+      }
+      seen.add(key);
+      if (!preserveOriginalPhone) {
+        row.phone = `+${key}`;
+      }
+      unique.push(row);
+      continue;
+    }
+
+    const normalized = normalizePhoneNumber(row.phone, defaultCountry);
+    if (!normalized) {
       invalid++;
       continue;
     }
+    const key = normalizeKey(normalized.e164);
     if (seen.has(key)) {
       duplicates++;
       continue;
     }
     seen.add(key);
+    // Persist canonical E.164 format
+    if (!preserveOriginalPhone) {
+      row.phone = normalized.e164;
+    }
     unique.push(row);
   }
 

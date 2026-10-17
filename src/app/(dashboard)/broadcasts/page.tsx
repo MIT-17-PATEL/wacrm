@@ -6,7 +6,10 @@ import { createClient } from '@/lib/supabase/client';
 import { Broadcast } from '@/types';
 import { Button, buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
-import { Megaphone, Plus, Users } from 'lucide-react';
+import { Megaphone, Plus, Users, Trash2, CheckSquare, Square } from 'lucide-react';
+import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -82,12 +85,108 @@ function BroadcastsPageInner() {
   const tGate = useTranslations('GatedButton');
   const format = useFormatter();
   const canCreate = useCan('send-messages');
+  const confirm = useConfirm();
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelecting, setIsSelecting] = useState(false);
 
   // Used to kick off polling only while something is actively sending.
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function handleDeleteSingle(broadcast: Broadcast, e?: React.MouseEvent) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (broadcast.status === 'sending') return;
+
+    const isScheduled = broadcast.status === 'scheduled';
+    const ok = await confirm({
+      title: `Delete "${broadcast.name}"?`,
+      description:
+        "This removes the broadcast and its stats from Neno Connect. Messages already delivered stay on customers' phones and in the Inbox.",
+      confirmLabel: isScheduled ? 'Cancel & delete' : 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    // Optimistic UI: card fades out and is removed immediately
+    const previousBroadcasts = [...broadcasts];
+    setBroadcasts((prev) => prev.filter((b) => b.id !== broadcast.id));
+    setDeletingIds((prev) => new Set(prev).add(broadcast.id));
+    toast.success('Broadcast deleted');
+
+    try {
+      const res = await fetch(`/api/whatsapp/broadcast/${broadcast.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || 'Failed to delete broadcast');
+      }
+    } catch (err) {
+      // Revert if failed
+      setBroadcasts(previousBroadcasts);
+      toast.error(err instanceof Error ? err.message : 'Failed to delete broadcast');
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(broadcast.id);
+        return next;
+      });
+    }
+  }
+
+  async function handleBulkDelete() {
+    const idsToDelete = Array.from(selectedIds).filter((id) => {
+      const b = broadcasts.find((item) => item.id === id);
+      return b && b.status !== 'sending';
+    });
+    if (idsToDelete.length === 0) return;
+
+    const ok = await confirm({
+      title: `Delete ${idsToDelete.length} broadcast${idsToDelete.length > 1 ? 's' : ''}?`,
+      description:
+        "This removes the selected broadcasts and their stats from Neno Connect. Messages already delivered stay on customers' phones and in the Inbox.",
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const previousBroadcasts = [...broadcasts];
+    setBroadcasts((prev) => prev.filter((b) => !idsToDelete.includes(b.id)));
+    setSelectedIds(new Set());
+    setIsSelecting(false);
+    toast.success(`${idsToDelete.length} broadcast${idsToDelete.length > 1 ? 's' : ''} deleted`);
+
+    try {
+      const results = await Promise.all(
+        idsToDelete.map((id) =>
+          fetch(`/api/whatsapp/broadcast/${id}`, { method: 'DELETE' }).then((r) => r.ok)
+        )
+      );
+      if (results.some((r) => !r)) {
+        throw new Error('Some broadcasts could not be deleted');
+      }
+    } catch (err) {
+      setBroadcasts(previousBroadcasts);
+      toast.error(err instanceof Error ? err.message : 'Failed to delete some broadcasts');
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function fetchBroadcasts() {
     try {
@@ -216,14 +315,29 @@ function BroadcastsPageInner() {
         title={bucket ? t(`bucket_${bucket}`) : t('title')}
         description={t('subtitle')}
         actions={
-          <GatedButton
-            canAct={canCreate}
-            gateReason={tGate('reasons.createBroadcasts')}
-            onClick={() => router.push('/broadcasts/new')}
-          >
-            <Plus className="h-4 w-4" />
-            {t('newBroadcast')}
-          </GatedButton>
+          <div className="flex items-center gap-2">
+            {broadcasts.length > 0 && (
+              <Button
+                variant={isSelecting ? 'soft' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setIsSelecting((prev) => !prev);
+                  if (isSelecting) setSelectedIds(new Set());
+                }}
+                className="border-border text-muted-foreground hover:bg-muted text-xs h-9 cursor-pointer"
+              >
+                {isSelecting ? 'Done' : 'Select'}
+              </Button>
+            )}
+            <GatedButton
+              canAct={canCreate}
+              gateReason={tGate('reasons.createBroadcasts')}
+              onClick={() => router.push('/broadcasts/new')}
+            >
+              <Plus className="h-4 w-4" />
+              {t('newBroadcast')}
+            </GatedButton>
+          </div>
         }
       />
 
@@ -267,10 +381,33 @@ function BroadcastsPageInner() {
               <Link
                 key={broadcast.id}
                 href={`/broadcasts/${broadcast.id}`}
-                className="surface surface-hover group flex flex-col gap-4 p-5"
+                className={cn(
+                  'surface surface-hover group relative flex flex-col gap-4 p-5 transition-all duration-300',
+                  deletingIds.has(broadcast.id) && 'opacity-0 scale-95 pointer-events-none'
+                )}
               >
                 <div className="flex items-start gap-3">
-                  <span className="icon-tile size-10 rounded-xl">
+                  {/* Bulk selection checkbox */}
+                  {isSelecting && (
+                    <button
+                      type="button"
+                      aria-label={selectedIds.has(broadcast.id) ? 'Deselect broadcast' : 'Select broadcast'}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSelect(broadcast.id);
+                      }}
+                      className="mt-0.5 text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
+                    >
+                      {selectedIds.has(broadcast.id) ? (
+                        <CheckSquare className="size-4 text-primary" />
+                      ) : (
+                        <Square className="size-4" />
+                      )}
+                    </button>
+                  )}
+
+                  <span className="icon-tile size-10 rounded-xl shrink-0">
                     <Megaphone className="size-5" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -279,17 +416,42 @@ function BroadcastsPageInner() {
                       {broadcast.template_name}
                     </p>
                   </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${status.classes}`}
-                  >
-                    {status.pulse && (
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full hidden rounded-full bg-warning opacity-75" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-warning" />
-                      </span>
-                    )}
-                    {tStatus(status.label)}
-                  </span>
+
+                  {/* Top-Right: Status Badge + Delete Button */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${status.classes}`}
+                    >
+                      {status.pulse && (
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="absolute inline-flex h-full w-full hidden rounded-full bg-warning opacity-75" />
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-warning" />
+                        </span>
+                      )}
+                      {tStatus(status.label)}
+                    </span>
+
+                    <button
+                      type="button"
+                      aria-label="Delete broadcast"
+                      disabled={broadcast.status === 'sending'}
+                      title={
+                        broadcast.status === 'sending'
+                          ? "Can't delete while sending"
+                          : 'Delete broadcast'
+                      }
+                      onClick={(e) => handleDeleteSingle(broadcast, e)}
+                      className={cn(
+                        'flex size-7 items-center justify-center rounded-lg border border-transparent transition-all cursor-pointer',
+                        'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100',
+                        broadcast.status === 'sending'
+                          ? 'cursor-not-allowed opacity-30 sm:opacity-30'
+                          : 'text-muted-foreground hover:border-danger/30 hover:bg-danger/10 hover:text-danger'
+                      )}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -317,6 +479,33 @@ function BroadcastsPageInner() {
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* Floating bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-border bg-popover/95 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in-0 slide-in-from-bottom-3 duration-200">
+          <span className="text-xs font-medium text-foreground">
+            {selectedIds.size} selected
+          </span>
+          <div className="h-4 w-px bg-border" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds(new Set())}
+            className="h-7 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            Deselect
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleBulkDelete}
+            className="h-7 text-xs gap-1.5 cursor-pointer"
+          >
+            <Trash2 className="size-3.5" />
+            Delete selected
+          </Button>
         </div>
       )}
     </div>

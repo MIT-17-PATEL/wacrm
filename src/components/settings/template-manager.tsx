@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { SettingsPanelHead } from './settings-panel-head';
 import {
   Dialog,
@@ -1066,13 +1067,12 @@ export function TemplateManager() {
                         </div>
                       )}
                       {btn.type === 'PHONE_NUMBER' && (
-                        <Input
-                          placeholder={t('phonePlaceholder')}
+                        <PhoneInput
                           value={btn.phone_number}
-                          onChange={(e) =>
-                            updateButton(i, { phone_number: e.target.value })
+                          onChange={(e164) =>
+                            updateButton(i, { phone_number: e164 })
                           }
-                          className="bg-muted border-border text-foreground placeholder:text-muted-foreground h-8 text-xs"
+                          className="h-8 text-xs"
                         />
                       )}
                       {btn.type === 'COPY_CODE' && (

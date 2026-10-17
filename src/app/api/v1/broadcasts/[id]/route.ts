@@ -39,3 +39,38 @@ export async function GET(
     return toApiErrorResponse(err);
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const ctx = await requireApiKey(request, 'broadcasts:send');
+    const { id } = await params;
+
+    const { data: bc, error: fetchErr } = await ctx.supabase
+      .from('broadcasts')
+      .select('status')
+      .eq('id', id)
+      .eq('account_id', ctx.accountId)
+      .maybeSingle();
+
+    if (fetchErr) return fail('internal', 'Database error', 500);
+    if (!bc) return fail('not_found', 'Broadcast not found', 404);
+    if (bc.status === 'sending') {
+      return fail('conflict', "Can't delete while sending", 409);
+    }
+
+    await ctx.supabase.from('broadcast_recipients').delete().eq('broadcast_id', id);
+    const { error: delErr } = await ctx.supabase
+      .from('broadcasts')
+      .delete()
+      .eq('id', id)
+      .eq('account_id', ctx.accountId);
+
+    if (delErr) return fail('internal', delErr.message, 500);
+    return ok({ deleted: id });
+  } catch (err) {
+    return toApiErrorResponse(err);
+  }
+}

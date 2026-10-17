@@ -54,7 +54,10 @@ export function parseBroadcastCsv(text: string): ParseBroadcastCsvResult {
 
   if (!hasPhoneColumn) return { ok: false, error: 'missing_phone_column' };
 
-  const { unique, duplicates, invalid } = dedupeByPhone(rows);
+  const { unique, duplicates, invalid } = dedupeByPhone(rows, {
+    requireLeadingPlus: true,
+    preserveOriginalPhone: true,
+  });
   if (unique.length === 0) return { ok: false, error: 'no_valid_rows' };
 
   return {

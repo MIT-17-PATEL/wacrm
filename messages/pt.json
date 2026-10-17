@@ -485,7 +485,7 @@
     },
     "form": {
       "addTitle": "Adicionar contato",
-      "addDesc": "Crie um novo contato. O nome é obrigatório.",
+      "addDesc": "Crie um novo contato. O número de telefone é obrigatório.",
       "editTitle": "Editar contato",
       "editDesc": "Atualize os dados e as tags do contato.",
       "nameLabel": "Nome",

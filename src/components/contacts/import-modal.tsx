@@ -8,6 +8,7 @@ import {
   isUniqueViolation,
   normalizeKey,
 } from '@/lib/contacts/dedupe';
+import { getWorkspaceDefaultCountry } from '@/lib/phone-normalize';
 import {
   parseContactCsv,
   type ParsedContactRow,
@@ -230,11 +231,12 @@ export function ImportModal({
       //    Rows with no usable phone at all are counted separately —
       //    they never duplicated anything, so lumping them into
       //    `skipped` would misreport them as dupes (see dedupeByPhone).
+      const defaultCountry = getWorkspaceDefaultCountry();
       const {
         unique,
         duplicates: inFileDupes,
         invalid: invalidPhone,
-      } = dedupeByPhone(parsedRows);
+      } = dedupeByPhone(parsedRows, defaultCountry);
       skipped += inFileDupes;
 
       // 2) Skip numbers already in this account. One read of the
