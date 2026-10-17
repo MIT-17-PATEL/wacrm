@@ -1045,12 +1045,12 @@ function SendMediaForm({
         <label className="mb-1 block text-xs text-muted-foreground">{t("fileLabel")}</label>
         {cfg.media_url ? (
           <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs">
-            <Paperclip className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+            <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <a
               href={cfg.media_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="min-w-0 flex-1 truncate text-foreground hover:text-cyan-300"
+              className="min-w-0 flex-1 truncate text-foreground hover:text-primary"
               title={displayName || cfg.media_url}
             >
               {displayName || cfg.media_url}

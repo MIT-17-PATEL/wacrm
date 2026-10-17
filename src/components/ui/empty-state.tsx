@@ -41,6 +41,18 @@ const ICONS: Record<IllustrationKind, LucideIcon> = {
   search: Search,
 }
 
+/** The line icon for a kind on its own, e.g. as card art. */
+export function EmptyIllustration({
+  kind,
+  className,
+}: {
+  kind: IllustrationKind
+  className?: string
+}) {
+  const Icon = ICONS[kind]
+  return <Icon className={cn("size-8 text-faint", className)} strokeWidth={1.5} aria-hidden />
+}
+
 /**
  * Quiet empty state: one 24px line icon, one sentence, an optional hint
  * and an optional action.

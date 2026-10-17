@@ -142,7 +142,7 @@ export function AiPlayground({ onGoToSetup }: { onGoToSetup?: () => void }) {
                 )}
               >
                 {turn.role === 'assistant' ? (
-                  <span className="mb-1 inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-white ">
+                  <span className="mb-1 inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
                     <Sparkles className="size-2.5" /> AI
                   </span>
                 ) : null}

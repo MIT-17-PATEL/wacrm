@@ -211,7 +211,7 @@ export default function AutomationsPage() {
                   className={cn(style.tile, "surface surface-hover group flex flex-col overflow-hidden")}
                 >
                   <div className="bg-muted relative flex h-32 items-center justify-center">
-                    <EmptyIllustration kind={style.art} className="h-24 transition-transform " />
+                    <EmptyIllustration kind={style.art} />
                   </div>
                   <div className="flex flex-1 flex-col p-4">
                     <p className="font-semibold text-foreground">{tpl.name}</p>

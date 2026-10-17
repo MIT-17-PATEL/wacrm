@@ -83,13 +83,9 @@ export default function AgentsPage() {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl bg-muted p-6 text-white shadow-raised sm:p-8">
-        {/* Darkening wash keeps white text AA on the brighter fuchsia end. */}
-        <span aria-hidden className="pointer-events-none absolute inset-0 bg-black/25" />
-        <span aria-hidden className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-white/15 " />
-        <span aria-hidden className="pointer-events-none absolute -bottom-20 left-1/3 size-48 rounded-full bg-black/10 " />
-        <div className="relative flex flex-wrap items-start gap-4">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25 ">
+      <section className="surface p-6 sm:p-8">
+        <div className="flex flex-wrap items-start gap-4">
+          <span className="flex size-14 items-center justify-center rounded-2xl border border-border bg-muted text-muted-foreground">
             <Bot className="size-7" />
           </span>
           <div className="min-w-0 flex-1">
@@ -99,7 +95,7 @@ export default function AgentsPage() {
               </h2>
               {decided ? <StatusChip status={status} /> : null}
             </div>
-            <p className="mt-1 max-w-2xl text-sm text-white/85">{t('description')}</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('description')}</p>
           </div>
         </div>
       </section>
@@ -150,16 +146,16 @@ function StatusChip({ status }: { status: AgentStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset',
-        status === 'live' && 'bg-white text-muted-foreground ring-white',
-        status === 'paused' && 'bg-white/15 text-white ring-white/40',
-        status === 'not_set_up' && 'bg-black/20 text-white ring-white/25',
+        'inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold',
+        status === 'live' && 'text-success',
+        status === 'paused' && 'text-warning',
+        status === 'not_set_up' && 'text-muted-foreground',
       )}
     >
       <span
         className={cn(
           'size-1.5 rounded-full',
-          status === 'live' ? 'animate-pulse bg-success' : status === 'paused' ? 'bg-warning' : 'bg-white/70',
+          status === 'live' ? 'animate-pulse bg-success' : status === 'paused' ? 'bg-warning' : 'bg-faint',
         )}
       />
       {t(status)}

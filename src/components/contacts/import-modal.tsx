@@ -612,7 +612,7 @@ export function ImportModal({
                   </div>
                 )}
                 {result.tagsAssigned > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-cyan-400">
+                  <div className="flex items-center gap-1.5 text-sm text-info">
                     <CheckCircle className="size-4 shrink-0" />
                     {t('resultTags', { count: result.tagsAssigned })}
                   </div>

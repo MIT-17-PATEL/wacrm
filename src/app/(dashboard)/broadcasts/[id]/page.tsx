@@ -328,10 +328,10 @@ export default function BroadcastDetailPage() {
   const isStalled = broadcast.status === 'sending' && pendingCount > 0;
 
   const funnelSteps: FunnelStep[] = [
-    { label: t('stats.sent'), value: broadcast.sent_count, color: 'bg-primary' },
-    { label: t('stats.delivered'), value: broadcast.delivered_count, color: 'bg-teal-500' },
+    { label: t('stats.sent'), value: broadcast.sent_count, color: 'bg-muted-foreground' },
+    { label: t('stats.delivered'), value: broadcast.delivered_count, color: 'bg-success' },
     { label: t('stats.read'), value: broadcast.read_count, color: 'bg-info' },
-    { label: t('stats.replied'), value: broadcast.replied_count, color: 'bg-indigo-500' },
+    { label: t('stats.replied'), value: broadcast.replied_count, color: 'bg-primary' },
   ];
 
   return (
@@ -474,14 +474,14 @@ export default function BroadcastDetailPage() {
           value={broadcast.sent_count}
           total={broadcast.total_recipients}
           icon={<Send className="h-4 w-4" />}
-          color="bg-accent text-primary"
+          color="bg-muted text-foreground"
         />
         <StatCard
           label={t('stats.delivered')}
           value={broadcast.delivered_count}
           total={broadcast.total_recipients}
           icon={<CheckCheck className="h-4 w-4" />}
-          color="bg-teal-500/10 text-teal-400"
+          color="bg-success/10 text-success"
         />
         <StatCard
           label={t('stats.read')}
@@ -495,7 +495,7 @@ export default function BroadcastDetailPage() {
           value={broadcast.replied_count}
           total={broadcast.total_recipients}
           icon={<MessageCircle className="h-4 w-4" />}
-          color="bg-indigo-500/10 text-indigo-400"
+          color="bg-primary/10 text-primary"
         />
         <StatCard
           label={t('stats.failed')}

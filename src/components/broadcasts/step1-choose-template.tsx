@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl';
 const categoryColors: Record<string, string> = {
   Marketing: 'bg-muted text-muted-foreground border-border',
   Utility: 'bg-info/10 text-info border-info/20',
-  Authentication: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  Authentication: 'bg-warning/10 text-warning border-warning/20',
 };
 
 interface Step1Props {
