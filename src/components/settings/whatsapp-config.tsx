@@ -34,6 +34,8 @@ import type { WhatsAppConfig as WhatsAppConfigType } from '@/types';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Wifi, WifiOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCan } from '@/hooks/use-can';
+import { MetaAppCard } from './meta-app-card';
 
 const MASKED_TOKEN = '••••••••••••••••';
 
@@ -86,6 +88,8 @@ export function WhatsAppConfig() {
   const [resetting, setResetting] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
+  // Meta App (App ID + secret) is Owner/Admin only — the API enforces it too.
+  const canManageMetaApp = useCan('edit-settings');
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
@@ -901,6 +905,8 @@ export function WhatsAppConfig() {
             </div>
           </CardContent>
         </Card>
+
+        {canManageMetaApp ? <MetaAppCard refreshKey={config ? `${config.phone_number_id}:${config.subscribed_apps_at ?? ''}:${config.connected_at ?? ''}` : null} /> : null}
 
         {/* Attachment retention. Only meaningful once a number is
             connected, since it governs what the webhook does with

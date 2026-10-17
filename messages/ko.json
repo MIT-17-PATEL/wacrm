@@ -2167,6 +2167,44 @@
       "textPlaceholder": "삽입할 메시지 텍스트",
       "cancel": "취소",
       "save": "저장"
+    },
+    "metaApp": {
+      "title": "Meta 앱",
+      "description": "자체 Meta 앱을 연결하면 이 워크스페이스의 웹훅을 해당 앱 시크릿 코드로 확인합니다.",
+      "appId": "앱 ID",
+      "appSecret": "앱 시크릿 코드",
+      "appSecretPlaceholder": "앱 시크릿 코드를 붙여넣으세요",
+      "appSecretHint": "Meta for Developers → 앱 설정 → 기본 정보. 암호화되어 저장되며 저장 후에는 다시 볼 수 없습니다.",
+      "showSecret": "시크릿 코드 표시",
+      "hideSecret": "시크릿 코드 숨기기",
+      "save": "Meta 앱 저장",
+      "validating": "Meta에서 확인 중…",
+      "cancel": "취소",
+      "saved": "Meta 앱을 저장했습니다",
+      "saveFailed": "Meta 앱을 저장하지 못했습니다",
+      "loadFailed": "Meta 앱 설정을 불러오지 못했습니다. 페이지를 새로고침하세요.",
+      "secretMaskedLabel": "{last4}(으)로 끝나는 시크릿 코드",
+      "updatedAt": "{date}에 업데이트됨",
+      "previousValidUntil": "이전 시크릿 코드는 {date}까지 계속 허용됩니다",
+      "replaceSecret": "시크릿 코드 교체",
+      "webhookUrl": "웹훅 URL",
+      "verifyToken": "확인 토큰",
+      "copy": "{label} 복사",
+      "copied": "복사됨",
+      "step1": "Meta for Developers → 내 앱 → WhatsApp → 구성 → 웹훅을 여세요.",
+      "step2": "위의 웹훅 URL과 확인 토큰을 붙여넣고 확인 및 저장을 누르세요.",
+      "step3": "웹훅 필드에서 messages 필드를 구독하세요.",
+      "test": "연결 테스트",
+      "testFailed": "테스트를 실행하지 못했습니다. 다시 시도하세요.",
+      "lastWebhook": "마지막 웹훅 수신: {date}",
+      "noWebhookYet": "아직 받은 웹훅이 없습니다",
+      "status": {
+        "not_configured": "설정 안 됨 — 서버 기본값 사용 중",
+        "connected": "연결됨",
+        "secret_invalid": "시크릿 코드가 올바르지 않음",
+        "token_app_mismatch": "액세스 토큰이 다른 Meta 앱에 속해 있습니다",
+        "webhook_silent": "웹훅이 이벤트를 받지 못하고 있습니다"
+      }
     }
   },
   "SignupPage": {
@@ -2893,6 +2931,13 @@
       "submitFailed": "템플릿을 제출하지 못했습니다.",
       "metaApiStatus": "Meta API 오류: {status}",
       "syncFailed": "템플릿을 동기화하지 못했습니다"
+    },
+    "metaApp": {
+      "appIdInvalid": "Meta for Developers → 앱 설정 → 기본 정보의 숫자 앱 ID를 입력하세요.",
+      "secretInvalid": "Meta for Developers → 앱 설정 → 기본 정보의 앱 시크릿 코드를 입력하세요.",
+      "wrongCredentials": "앱 ID 또는 앱 시크릿 코드가 올바르지 않습니다",
+      "metaUnreachable": "Meta에 연결할 수 없습니다. 잠시 후 다시 시도하세요.",
+      "saveFailed": "Meta 앱을 저장하지 못했습니다. 다시 시도하세요."
     }
   },
   "Nav": {

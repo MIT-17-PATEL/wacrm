@@ -2167,6 +2167,44 @@
       "textPlaceholder": "The message text to insert",
       "cancel": "Cancel",
       "save": "Save"
+    },
+    "metaApp": {
+      "title": "Meta App",
+      "description": "Connect your own Meta App so webhooks for this workspace are verified with its App Secret.",
+      "appId": "App ID",
+      "appSecret": "App Secret",
+      "appSecretPlaceholder": "Paste the App Secret",
+      "appSecretHint": "Meta for Developers → App settings → Basic. Stored encrypted; it can't be shown again after saving.",
+      "showSecret": "Show secret",
+      "hideSecret": "Hide secret",
+      "save": "Save Meta App",
+      "validating": "Checking with Meta…",
+      "cancel": "Cancel",
+      "saved": "Meta App saved",
+      "saveFailed": "Couldn't save the Meta App",
+      "loadFailed": "Couldn't load the Meta App settings. Reload the page to try again.",
+      "secretMaskedLabel": "Secret ending in {last4}",
+      "updatedAt": "Updated {date}",
+      "previousValidUntil": "Previous secret still accepted until {date}",
+      "replaceSecret": "Replace secret",
+      "webhookUrl": "Webhook URL",
+      "verifyToken": "Verify token",
+      "copy": "Copy {label}",
+      "copied": "Copied",
+      "step1": "Open Meta for Developers → your app → WhatsApp → Configuration → Webhook.",
+      "step2": "Paste the Webhook URL and Verify token above, then click Verify and save.",
+      "step3": "Under Webhook fields, subscribe to the messages field.",
+      "test": "Test connection",
+      "testFailed": "Couldn't run the test. Try again.",
+      "lastWebhook": "Last webhook received {date}",
+      "noWebhookYet": "No webhook received yet",
+      "status": {
+        "not_configured": "Not set — using the server default",
+        "connected": "Connected",
+        "secret_invalid": "Secret invalid",
+        "token_app_mismatch": "Access token belongs to a different Meta App",
+        "webhook_silent": "Webhook not receiving events"
+      }
     }
   },
   "SignupPage": {
@@ -2893,6 +2931,13 @@
       "submitFailed": "Failed to submit template.",
       "metaApiStatus": "Meta API error: {status}",
       "syncFailed": "Failed to sync templates"
+    },
+    "metaApp": {
+      "appIdInvalid": "Enter the numeric App ID from Meta for Developers → App settings → Basic.",
+      "secretInvalid": "Enter the App Secret from Meta for Developers → App settings → Basic.",
+      "wrongCredentials": "App ID or App Secret is wrong",
+      "metaUnreachable": "Meta could not be reached. Try again in a moment.",
+      "saveFailed": "Couldn't save the Meta App. Try again."
     }
   },
   "Nav": {

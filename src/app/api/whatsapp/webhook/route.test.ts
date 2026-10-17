@@ -1,5 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { signBody } from '@/lib/whatsapp/webhook-signature'
+
+// Regression harness for the shared route with ONLY the deployment-wide
+// META_APP_SECRET (no per-workspace Meta Apps): signatures are real
+// HMACs and verification runs through the real webhook-auth module, so
+// every assertion below proves processing is unchanged by the
+// per-workspace secret work.
+const ENV_SECRET = 'regression-env-secret'
+process.env.META_APP_SECRET = ENV_SECRET
+
+function signedHeaders(rawBody: string, secret = ENV_SECRET) {
+  return {
+    get: (name: string) => (name.toLowerCase() === 'x-hub-signature-256' ? signBody(rawBody, secret) : null),
+  }
+}
+
 // Shared, hoisted state the module mocks close over. Reset per test.
 const h = vi.hoisted(() => ({
   runAutomationsForTrigger: vi.fn(),
@@ -42,6 +58,8 @@ const h = vi.hoisted(() => ({
     broadcastRecipient: null as { id: string; status: string } | null,
     /** Patches applied to that broadcast_recipients row. */
     recipientUpdates: [] as Record<string, unknown>[],
+    /** Writes to whatsapp_meta_apps (must stay empty for env-only setups). */
+    metaAppWrites: 0,
   },
 }))
 
@@ -58,9 +76,24 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     from(table: string) {
       switch (table) {
+        case 'whatsapp_meta_apps':
+          // No workspace has its own Meta App in this harness.
+          return {
+            select: () => ({ in: () => Promise.resolve({ data: [], error: null }) }),
+            update: () => {
+              h.state.metaAppWrites++
+              return { in: () => Promise.resolve({ error: null }) }
+            },
+          }
         case 'whatsapp_config':
           return {
             select: () => ({
+              // Routing lookup (webhook-auth): who owns pn-1 / WABA-1.
+              in: () =>
+                Promise.resolve({
+                  data: [{ account_id: 'acc-1', phone_number_id: 'pn-1', waba_id: 'WABA-1' }],
+                  error: null,
+                }),
               eq: () =>
                 Promise.resolve({
                   data: [
@@ -259,9 +292,6 @@ vi.mock('@/lib/contacts/dedupe', () => ({
   isUniqueViolation: () => false,
 }))
 
-vi.mock('@/lib/whatsapp/webhook-signature', () => ({
-  verifyMetaWebhookSignature: () => true,
-}))
 vi.mock('@/lib/whatsapp/template-webhook', () => ({
   isTemplateWebhookField: (field: string) =>
     field.startsWith('message_template_'),
@@ -322,7 +352,7 @@ function inboundRequest(
   }
   return {
     text: async () => JSON.stringify(body),
-    headers: { get: () => 'sha256=stub' },
+    headers: signedHeaders(JSON.stringify(body)),
   } as unknown as Request
 }
 
@@ -355,7 +385,7 @@ async function runStatusWebhook(status: Record<string, unknown>) {
   }
   const res = await POST({
     text: async () => JSON.stringify(body),
-    headers: { get: () => 'sha256=stub' },
+    headers: signedHeaders(JSON.stringify(body)),
   } as unknown as Request)
   for (const cb of h.state.afterCallbacks) await cb()
   return res
@@ -381,6 +411,7 @@ beforeEach(() => {
   h.state.messageUpdates = []
   h.state.broadcastRecipient = null
   h.state.recipientUpdates = []
+  h.state.metaAppWrites = 0
   mockFindExistingContact.mockResolvedValue({
     id: 'contact-1',
     name: 'Ada',
@@ -896,7 +927,7 @@ describe('template-lifecycle webhooks: WABA id is threaded to the handler (#534)
     }
     const req = {
       text: async () => JSON.stringify(body),
-      headers: { get: () => 'sha256=stub' },
+      headers: signedHeaders(JSON.stringify(body)),
     } as unknown as Request
 
     await POST(req)
@@ -1052,5 +1083,62 @@ describe('inbound webhook: automation waiting for a reply', () => {
     await runWebhook()
 
     expect(h.resumeAwaitingReply).not.toHaveBeenCalled()
+  })
+})
+
+describe('shared route with only META_APP_SECRET (regression for per-workspace secrets)', () => {
+  function bodyFor(message: Record<string, unknown> = TEXT_MESSAGE) {
+    return JSON.stringify({
+      entry: [
+        {
+          changes: [
+            {
+              field: 'messages',
+              value: { metadata: { phone_number_id: 'pn-1' }, contacts: LEGACY_CONTACTS, messages: [message] },
+            },
+          ],
+        },
+      ],
+    })
+  }
+
+  it('processes a correctly signed message exactly as before, with no extra writes', async () => {
+    const res = await runWebhook()
+    expect(res).toEqual({ body: { status: 'received' }, init: { status: 200 } })
+    expect(h.state.upsertCalls).toHaveLength(1)
+    expect(h.state.upsertCalls[0].row).toMatchObject({ message_id: 'wamid.TEST1', conversation_id: 'conv-1' })
+    expect(h.runAutomationsForTrigger).toHaveBeenCalled()
+    // No per-workspace bookkeeping for env-verified deliveries.
+    expect(h.state.metaAppWrites).toBe(0)
+  })
+
+  it('rejects a wrong signature with 401 and processes nothing', async () => {
+    const raw = bodyFor()
+    const res = await POST({
+      text: async () => raw,
+      headers: { get: () => 'sha256=' + '0'.repeat(64) },
+    } as unknown as Request)
+    expect(res).toEqual({ body: { error: 'Invalid signature' }, init: { status: 401 } })
+    expect(h.state.afterCallbacks).toHaveLength(0)
+    expect(h.state.upsertCalls).toHaveLength(0)
+  })
+
+  it('rejects a body signed with some other secret', async () => {
+    const raw = bodyFor()
+    const res = await POST({ text: async () => raw, headers: signedHeaders(raw, 'not-the-secret') } as unknown as Request)
+    expect(res).toEqual({ body: { error: 'Invalid signature' }, init: { status: 401 } })
+    expect(h.state.afterCallbacks).toHaveLength(0)
+  })
+
+  it('rejects a missing signature header', async () => {
+    const raw = bodyFor()
+    const res = await POST({ text: async () => raw, headers: { get: () => null } } as unknown as Request)
+    expect(res).toEqual({ body: { error: 'Invalid signature' }, init: { status: 401 } })
+  })
+
+  it('still answers 400 for a correctly signed body that is not JSON', async () => {
+    const raw = 'not json'
+    const res = await POST({ text: async () => raw, headers: signedHeaders(raw) } as unknown as Request)
+    expect(res).toEqual({ body: { error: 'Invalid JSON' }, init: { status: 400 } })
   })
 })

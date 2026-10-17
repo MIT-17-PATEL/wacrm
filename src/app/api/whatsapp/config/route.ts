@@ -24,6 +24,8 @@ import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
 import { resolveVerifyTokenForSave } from '@/lib/whatsapp/verify-token'
 import { getT } from '@/lib/i18n/translate'
 
+import { effectiveAppId, loadMetaApp, metaAppAdmin, runTokenAppCheck } from '@/lib/whatsapp/meta-app-server'
+
 const t = getT('Api')
 
 /**
@@ -206,7 +208,7 @@ export async function GET() {
     if (config.waba_id) {
       try {
         const subs = await getSubscribedApps({ wabaId: config.waba_id, accessToken })
-        const state = appSubscriptionState(subs, process.env.META_APP_ID)
+        const state = appSubscriptionState(subs, (await effectiveAppId(accountId)) ?? undefined)
         wabaSubscription = {
           checked: true,
           subscribed: state.subscribed,
@@ -549,6 +551,16 @@ export async function POST(request: Request) {
           { status: 500 }
         )
       }
+    }
+
+    // A workspace with its own Meta App: confirm the token just saved
+    // belongs to that App (shown in Settings › WhatsApp › Meta App).
+    // Best effort — never blocks the connect.
+    try {
+      const metaApp = await loadMetaApp(metaAppAdmin(), accountId)
+      if (metaApp) await runTokenAppCheck(metaAppAdmin(), metaApp, access_token)
+    } catch {
+      console.warn('[whatsapp/config] Meta App token check skipped')
     }
 
     if (registrationError) {

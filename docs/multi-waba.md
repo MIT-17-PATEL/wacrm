@@ -1,27 +1,75 @@
 # Several WhatsApp Business Accounts on one wacrm deployment
 
 Issue #500 asked how one deployment can serve accounts whose numbers
-belong to different WhatsApp Business Accounts (WABAs), given that
-`META_APP_SECRET` and `META_APP_ID` are deployment-wide environment
-variables. Short answer: WABAs are already per account; only the Meta
-*App* is deployment-wide, and since #500 the webhook accepts several
-app secrets. This page walks through the three setups.
+belong to different WhatsApp Business Accounts (WABAs) and different
+Meta Apps. Since migration 047 every workspace can connect **its own
+Meta App** (App ID + App Secret) from Settings › WhatsApp › Meta App.
+`META_APP_SECRET` is now an **optional fallback** for workspaces that
+don't, which keeps self-hosted and single-tenant installs working with
+no change.
 
-## What is per account and what is per deployment
+## What is per workspace and what is per deployment
 
 | Value | Lives in | Scope |
 | --- | --- | --- |
-| Phone Number ID, WABA ID, access token, verify token, two-step PIN | `whatsapp_config` (one row per wacrm account, token encrypted) | per account |
+| Phone Number ID, WABA ID, access token, two-step PIN | `whatsapp_config` (one row per workspace, token encrypted) | per workspace |
+| Meta App ID, App Secret, webhook verify token, last webhook time | `whatsapp_meta_apps` (migration 047; secret AES-256-GCM encrypted; service-role only) | per workspace |
 | Webhook callback URL | your Meta App → WhatsApp → Configuration | per Meta App |
-| `META_APP_SECRET` | server environment | per deployment — **may list several** |
-| `META_APP_ID` | server environment | per deployment — single value |
+| `META_APP_SECRET` | server environment | fallback for workspaces without their own secret — **may list several** |
+| `META_APP_ID` | server environment | fallback App ID for template image-header uploads |
+| `ENCRYPTION_KEY` | server environment | one key; 64 hex chars or 32 bytes base64 (`openssl rand -base64 32`) |
 
-Meta signs every webhook delivery with the secret of the App the WABA
-is subscribed to. wacrm checks that signature against
-`META_APP_SECRET` before it looks at the body, then routes the payload
-to the account whose row holds the `phone_number_id` in the delivery.
+`whatsapp_meta_apps` has RLS enabled with no policies: agents and
+viewers can't read it from the browser. Only Owners and Admins see the
+Meta App section, and the API (`/api/whatsapp/meta-app`) enforces that
+role on the server. The App Secret is write-only — after saving, the UI
+and API show only its last 4 characters.
 
-## Setup A — many accounts, one Meta App, many WABAs (works out of the box)
+## Setup 0 — each workspace brings its own Meta App (recommended)
+
+1. In the workspace, open **Settings › WhatsApp › Meta App** (Owner or
+   Admin) and enter the App ID and App Secret from Meta for Developers
+   → App settings → Basic. wacrm validates the pair with Meta
+   (`GET /oauth/access_token?grant_type=client_credentials`; the
+   returned app token is discarded) and rejects a wrong pair with
+   "App ID or App Secret is wrong".
+2. Copy the workspace's **Webhook URL**
+   (`https://<host>/api/webhook/whatsapp/<workspaceId>`) and **Verify
+   token** into the Meta App → WhatsApp → Configuration → Webhook, then
+   subscribe to the `messages` field.
+3. Connect the number as usual (Phone Number ID, WABA ID, access token).
+   wacrm runs `GET /debug_token` with the App credentials and shows
+   **"Access token belongs to a different Meta App"** when the token was
+   issued for another app. The same check runs on save and on
+   **Test connection**.
+
+How deliveries are verified:
+
+* **Per-workspace URL** — the raw body's `X-Hub-Signature-256` must
+  match that workspace's current secret (or the previous one, see
+  rotation). Anything else → 401, nothing processed. Changes in the body
+  for phone numbers or WABAs owned by another workspace are dropped.
+* **Shared URL** (`/api/whatsapp/webhook`) — the body is parsed only to
+  read `metadata.phone_number_id` (or `entry.id`, the WABA, for template
+  events). Each owning workspace is verified with its own secret when it
+  has one, else with `META_APP_SECRET`. Only verified workspaces'
+  changes are processed, so a valid signature for workspace A can never
+  create data in workspace B. A workspace that has its own secret is
+  **not** accepted via `META_APP_SECRET`.
+
+Rotating a secret: click **Replace secret** and save the new one. The
+old secret keeps verifying webhooks for 24 hours, so deliveries signed
+while you switch Meta over still pass; after that only the new one does.
+
+Status line (Test connection): **Connected ✓**, **Secret invalid** (Meta
+no longer accepts the stored pair), **Access token belongs to a
+different Meta App**, or **Webhook not receiving events** (nothing
+verified in the last 24 hours, with the last received time).
+
+The workspace's App ID is also used for template image-header uploads
+(Meta's resumable upload is app-scoped), falling back to `META_APP_ID`.
+
+## Setup A — many accounts, one Meta App, many WABAs (env fallback)
 
 This is the normal case for an agency or a company with several
 brands. Nothing to configure beyond a single-tenant install.
@@ -53,7 +101,7 @@ Constraints:
   handshake (`GET /api/whatsapp/webhook`) accepts any account's token.
   Using the same string in every account keeps this simple.
 
-## Setup B — WABAs under different Meta Apps
+## Setup B — WABAs under different Meta Apps (env fallback)
 
 Sometimes the WABAs cannot share an app: two clients each own their own
 Meta App and portfolio, or an existing app cannot be granted access to
@@ -83,29 +131,14 @@ so wacrm needs all of them.
 Rotating a secret: add the new one to the list, redeploy, then rotate
 in Meta, then remove the old one. Deliveries keep verifying throughout.
 
-## Setup C — what is not supported: a per-account Meta App ID
+## Setup C — per-workspace App ID for template image headers (now supported)
 
-`META_APP_ID` is used for exactly one thing: Meta's Resumable Upload
-when a message template has an **image header** (the header sample must
-be an app-scoped upload handle, not a URL). It is a single value.
-
-With setup B, every account's image-header template upload therefore
-goes through the one app named in `META_APP_ID`, authenticated with
-that account's own token. If the account's token was generated under a
-different app's portfolio, Meta rejects the upload and the template
-submit returns that error. Text-only templates, sending, receiving and
-everything else are unaffected.
-
-Workarounds until a per-account app id exists:
-
-* Put the WABAs that need image-header templates under the app named
-  in `META_APP_ID`; or
-* Create image-header templates directly in WhatsApp Manager — once
-  approved, wacrm lists and sends them like any other template.
-
-A per-account `app_id` column on `whatsapp_config` would lift this; it
-is not planned for the near term because the only consumer is the
-template header upload.
+This used to be the unsupported case: `META_APP_ID` was a single value,
+so with WABAs under several apps every image-header template upload
+went through one app and failed for the others. A workspace that saves
+its own Meta App (setup 0) now uploads through **its own** App ID; only
+workspaces without one still use `META_APP_ID`. Text-only templates,
+sending and receiving never depended on it.
 
 ## Checking a multi-WABA deployment
 
@@ -116,4 +149,7 @@ template header upload.
   subscribe the WABA to its app — re-enter the token and save again.
 * A webhook delivery that is rejected with 401 means no configured
   secret produced its signature — the WABA is subscribed to an app
-  whose secret is missing from `META_APP_SECRET`.
+  whose secret is missing from `META_APP_SECRET` — or, for a workspace
+  with its own Meta App, the delivery wasn't signed by that app's
+  current (or 24h-previous) secret. Settings › WhatsApp › Meta App →
+  Test connection shows which.

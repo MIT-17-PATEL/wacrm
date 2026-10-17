@@ -11,8 +11,13 @@ import crypto from 'node:crypto'
  * Reference:
  *   https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verify-payloads
  *
- * Contract:
- *   `META_APP_SECRET` is **required**. If it's missing we fail closed —
+ * Per-workspace secrets (migration 047): a workspace that saved its own
+ * Meta App is verified with that secret via `signatureMatchesAny` (see
+ * lib/whatsapp/webhook-auth.ts). `META_APP_SECRET` below is the
+ * deployment-wide FALLBACK for workspaces without one.
+ *
+ * Contract (fallback):
+ *   Without `META_APP_SECRET` the fallback fails closed —
  *   every request is rejected until the operator configures the
  *   secret. A previous version fell open with a warning log, which is
  *   unsafe for a public template: anyone who forgets the env var would
@@ -77,4 +82,29 @@ export function verifyMetaWebhookSignature(
     if (signatureMatches(rawBody, signatureHeader, secret)) ok = true
   }
   return ok
+}
+
+/**
+ * True when `signatureHeader` is a valid `sha256=` HMAC of `rawBody`
+ * under ANY of `secrets`. Every candidate is compared with
+ * `timingSafeEqual` (no early exit). Empty candidate list → false.
+ * Used by the per-workspace verification (workspace secret + an
+ * unexpired previous secret during rotation).
+ */
+export function signatureMatchesAny(
+  rawBody: string,
+  signatureHeader: string | null,
+  secrets: readonly string[],
+): boolean {
+  if (!signatureHeader || !signatureHeader.startsWith('sha256=')) return false
+  let ok = false
+  for (const secret of secrets) {
+    if (secret && signatureMatches(rawBody, signatureHeader, secret)) ok = true
+  }
+  return ok
+}
+
+/** `x-hub-signature-256` value Meta would send for `rawBody` (tests, tooling). */
+export function signBody(rawBody: string, secret: string): string {
+  return 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
 }

@@ -16,6 +16,7 @@ import {
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { ensureMediaHeaderHandle } from '@/lib/whatsapp/template-header-handle'
+import { effectiveAppId } from '@/lib/whatsapp/meta-app-server'
 import { getT } from '@/lib/i18n/translate'
 
 const t = getT('Api')
@@ -149,7 +150,7 @@ export async function PATCH(
       // handle on every edit (Meta replaces components wholesale). Derive
       // from header_media_url.
       try {
-        await ensureMediaHeaderHandle(payload, accessToken)
+        await ensureMediaHeaderHandle(payload, accessToken, await effectiveAppId(accountId))
       } catch (e) {
         return NextResponse.json(
           { error: e instanceof Error ? e.message : t('templates.headerUploadFailed') },

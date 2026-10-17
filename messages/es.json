@@ -2167,6 +2167,44 @@
       "textPlaceholder": "El texto del mensaje que se insertará",
       "cancel": "Cancelar",
       "save": "Guardar"
+    },
+    "metaApp": {
+      "title": "App de Meta",
+      "description": "Conecta tu propia app de Meta para que los webhooks de este espacio se verifiquen con su clave secreta.",
+      "appId": "ID de la app",
+      "appSecret": "Clave secreta de la app",
+      "appSecretPlaceholder": "Pega la clave secreta",
+      "appSecretHint": "Meta for Developers → Configuración de la app → Básica. Se guarda cifrada y no se puede volver a mostrar.",
+      "showSecret": "Mostrar clave",
+      "hideSecret": "Ocultar clave",
+      "save": "Guardar app de Meta",
+      "validating": "Comprobando con Meta…",
+      "cancel": "Cancelar",
+      "saved": "App de Meta guardada",
+      "saveFailed": "No se pudo guardar la app de Meta",
+      "loadFailed": "No se pudo cargar la configuración de la app de Meta. Recarga la página.",
+      "secretMaskedLabel": "Clave que termina en {last4}",
+      "updatedAt": "Actualizada el {date}",
+      "previousValidUntil": "La clave anterior se acepta hasta el {date}",
+      "replaceSecret": "Reemplazar clave",
+      "webhookUrl": "URL del webhook",
+      "verifyToken": "Token de verificación",
+      "copy": "Copiar {label}",
+      "copied": "Copiado",
+      "step1": "Abre Meta for Developers → tu app → WhatsApp → Configuración → Webhook.",
+      "step2": "Pega la URL del webhook y el token de verificación de arriba y pulsa Verificar y guardar.",
+      "step3": "En los campos del webhook, suscríbete al campo messages.",
+      "test": "Probar conexión",
+      "testFailed": "No se pudo ejecutar la prueba. Inténtalo de nuevo.",
+      "lastWebhook": "Último webhook recibido: {date}",
+      "noWebhookYet": "Aún no se ha recibido ningún webhook",
+      "status": {
+        "not_configured": "Sin configurar: se usa la del servidor",
+        "connected": "Conectada",
+        "secret_invalid": "Clave no válida",
+        "token_app_mismatch": "El token de acceso pertenece a otra app de Meta",
+        "webhook_silent": "El webhook no recibe eventos"
+      }
     }
   },
   "SignupPage": {
@@ -2893,6 +2931,13 @@
       "submitFailed": "Error al enviar la plantilla.",
       "metaApiStatus": "Error de la API de Meta: {status}",
       "syncFailed": "Error al sincronizar las plantillas"
+    },
+    "metaApp": {
+      "appIdInvalid": "Introduce el ID numérico de la app (Meta for Developers → Configuración de la app → Básica).",
+      "secretInvalid": "Introduce la clave secreta de la app (Meta for Developers → Configuración de la app → Básica).",
+      "wrongCredentials": "El ID o la clave secreta de la app no son correctos",
+      "metaUnreachable": "No se pudo contactar con Meta. Inténtalo de nuevo en un momento.",
+      "saveFailed": "No se pudo guardar la app de Meta. Inténtalo de nuevo."
     }
   },
   "Nav": {

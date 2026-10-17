@@ -14,6 +14,7 @@ import {
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { ensureMediaHeaderHandle } from '@/lib/whatsapp/template-header-handle'
+import { effectiveAppId } from '@/lib/whatsapp/meta-app-server'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 import { getT } from '@/lib/i18n/translate'
 
@@ -173,7 +174,7 @@ export async function POST(request: Request) {
       // an actionable message (missing META_APP_ID, unreachable URL,
       // wrong type/size).
       try {
-        await ensureMediaHeaderHandle(payload, accessToken)
+        await ensureMediaHeaderHandle(payload, accessToken, await effectiveAppId(accountId))
       } catch (e) {
         return NextResponse.json(
           { error: e instanceof Error ? e.message : t('templates.headerUploadFailed') },

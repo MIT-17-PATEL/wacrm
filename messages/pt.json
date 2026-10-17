@@ -2167,6 +2167,44 @@
       "textPlaceholder": "O texto da mensagem a inserir",
       "cancel": "Cancelar",
       "save": "Salvar"
+    },
+    "metaApp": {
+      "title": "App da Meta",
+      "description": "Conecte seu próprio app da Meta para que os webhooks deste espaço sejam verificados com a chave secreta dele.",
+      "appId": "ID do app",
+      "appSecret": "Chave secreta do app",
+      "appSecretPlaceholder": "Cole a chave secreta",
+      "appSecretHint": "Meta for Developers → Configurações do app → Básico. Fica criptografada e não pode ser exibida de novo.",
+      "showSecret": "Mostrar chave",
+      "hideSecret": "Ocultar chave",
+      "save": "Salvar app da Meta",
+      "validating": "Verificando com a Meta…",
+      "cancel": "Cancelar",
+      "saved": "App da Meta salvo",
+      "saveFailed": "Não foi possível salvar o app da Meta",
+      "loadFailed": "Não foi possível carregar as configurações do app da Meta. Recarregue a página.",
+      "secretMaskedLabel": "Chave terminada em {last4}",
+      "updatedAt": "Atualizada em {date}",
+      "previousValidUntil": "A chave anterior ainda é aceita até {date}",
+      "replaceSecret": "Substituir chave",
+      "webhookUrl": "URL do webhook",
+      "verifyToken": "Token de verificação",
+      "copy": "Copiar {label}",
+      "copied": "Copiado",
+      "step1": "Abra Meta for Developers → seu app → WhatsApp → Configuração → Webhook.",
+      "step2": "Cole a URL do webhook e o token de verificação acima e clique em Verificar e salvar.",
+      "step3": "Em Campos do webhook, assine o campo messages.",
+      "test": "Testar conexão",
+      "testFailed": "Não foi possível executar o teste. Tente novamente.",
+      "lastWebhook": "Último webhook recebido: {date}",
+      "noWebhookYet": "Nenhum webhook recebido ainda",
+      "status": {
+        "not_configured": "Não configurado: usando o padrão do servidor",
+        "connected": "Conectado",
+        "secret_invalid": "Chave inválida",
+        "token_app_mismatch": "O token de acesso pertence a outro app da Meta",
+        "webhook_silent": "O webhook não está recebendo eventos"
+      }
     }
   },
   "SignupPage": {
@@ -2893,6 +2931,13 @@
       "submitFailed": "Falha ao enviar o modelo.",
       "metaApiStatus": "Erro da API da Meta: {status}",
       "syncFailed": "Falha ao sincronizar os modelos"
+    },
+    "metaApp": {
+      "appIdInvalid": "Informe o ID numérico do app (Meta for Developers → Configurações do app → Básico).",
+      "secretInvalid": "Informe a chave secreta do app (Meta for Developers → Configurações do app → Básico).",
+      "wrongCredentials": "O ID ou a chave secreta do app está incorreto",
+      "metaUnreachable": "Não foi possível contatar a Meta. Tente novamente em instantes.",
+      "saveFailed": "Não foi possível salvar o app da Meta. Tente novamente."
     }
   },
   "Nav": {
