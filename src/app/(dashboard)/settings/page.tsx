@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/hooks/use-theme';
+import { useShell } from '@/components/layout/shell-context';
+import { cn } from '@/lib/utils';
 import { SettingsRail } from '@/components/settings/settings-rail';
 import { SettingsOverview } from '@/components/settings/settings-overview';
 import { ProfileForm } from '@/components/settings/profile-form';
@@ -45,6 +47,9 @@ function SettingsPageInner() {
   const { defaultCurrency } = useAuth();
   const { mode } = useTheme();
   const t = useTranslations('Settings');
+  // The docked context panel already lists the sections; the in-page
+  // rail covers small screens and a collapsed panel.
+  const { panel: contextPanel } = useShell();
 
   // The URL (`?tab=`) is the single source of truth for the active
   // section — deep-linkable, and it keeps the existing links in the
@@ -94,8 +99,15 @@ function SettingsPageInner() {
         </p>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[236px_minmax(0,1fr)] lg:items-start">
-        <SettingsRail active={section} onSelect={go} hints={hints} />
+      <div
+        className={cn(
+          'mt-6 grid gap-6',
+          contextPanel.collapsed && 'lg:grid-cols-[236px_minmax(0,1fr)] lg:items-start',
+        )}
+      >
+        <div className={cn(!contextPanel.collapsed && 'lg:hidden')}>
+          <SettingsRail active={section} onSelect={go} hints={hints} />
+        </div>
         <div className="min-w-0">{panel[section]}</div>
       </div>
     </div>

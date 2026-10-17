@@ -22,7 +22,8 @@ export function PageHeader({
   return (
     <div className={cn("mb-6 flex flex-wrap items-end gap-4", className)}>
       <div className="min-w-0 flex-1">
-        <h2 className="text-2xl leading-tight font-semibold text-foreground">{title}</h2>
+        {/* The page's one h1 (the shell has no title bar). */}
+        <h1 className="text-2xl leading-tight font-semibold text-foreground">{title}</h1>
         {description ? (
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
         ) : null}

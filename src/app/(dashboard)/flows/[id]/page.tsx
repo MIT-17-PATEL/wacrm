@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
 import { useTranslations } from "next-intl";
@@ -67,9 +67,7 @@ export default function FlowEditorPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <PageSkeleton variant="editor" />
     );
   }
   if (notFound || !flow) {

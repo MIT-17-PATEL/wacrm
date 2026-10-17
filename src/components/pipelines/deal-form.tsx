@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { celebrateWon } from "@/lib/pipelines/won";
 
 interface DealFormProps {
   open: boolean;
@@ -223,6 +224,7 @@ export function DealForm({
       toast.error(t("toastFailedStatus"));
       return;
     }
+    if (status === "won") celebrateWon();
     toast.success(
       status === "won" ? t("toastMarkedWon") : status === "lost" ? t("toastMarkedLost") : t("toastReopened"),
     );

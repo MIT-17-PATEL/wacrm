@@ -185,10 +185,7 @@ function MessageContent({
         <div>
           <span
             className={cn(
-              "mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold  ",
-              isAgent
-                ? "border border-border text-muted-foreground"
-                : "bg-accent text-primary",
+              "mb-1 inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground",
             )}
           >
             <LayoutTemplate className="h-3 w-3" />

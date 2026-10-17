@@ -91,3 +91,18 @@ export function getRecipientStatus(status: string): StatusDisplay {
     recipientStatusConfig.pending
   );
 }
+
+/** The three groups the Broadcasts context panel lists. */
+export type BroadcastBucket = "drafts" | "scheduled" | "sent";
+export const BROADCAST_BUCKETS: BroadcastBucket[] = ["drafts", "scheduled", "sent"];
+
+/** Sending and failed runs live under "Sent" — they have left the drafts. */
+export function broadcastBucket(status: BroadcastStatus | string): BroadcastBucket {
+  if (status === "draft") return "drafts";
+  if (status === "scheduled") return "scheduled";
+  return "sent";
+}
+
+export function isBroadcastBucket(value: string | null): value is BroadcastBucket {
+  return value === "drafts" || value === "scheduled" || value === "sent";
+}

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  broadcastBucket,
   broadcastStatusConfig,
+  isBroadcastBucket,
   getBroadcastStatus,
   getRecipientStatus,
   recipientStatusConfig,
@@ -47,5 +49,21 @@ describe("getRecipientStatus", () => {
 
   it("falls back to pending on an unknown status string", () => {
     expect(getRecipientStatus("???")).toBe(recipientStatusConfig.pending);
+  });
+});
+
+describe("broadcastBucket", () => {
+  it("groups statuses into drafts, scheduled and sent", () => {
+    expect(broadcastBucket("draft")).toBe("drafts");
+    expect(broadcastBucket("scheduled")).toBe("scheduled");
+    expect(broadcastBucket("sending")).toBe("sent");
+    expect(broadcastBucket("sent")).toBe("sent");
+    expect(broadcastBucket("failed")).toBe("sent");
+  });
+
+  it("validates the ?status= param", () => {
+    expect(isBroadcastBucket("drafts")).toBe(true);
+    expect(isBroadcastBucket("draft")).toBe(false);
+    expect(isBroadcastBucket(null)).toBe(false);
   });
 });

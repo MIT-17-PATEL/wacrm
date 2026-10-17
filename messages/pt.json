@@ -211,7 +211,15 @@
       "windowHours": "Faltam {hours} h",
       "windowMinutes": "Faltam {minutes} min",
       "windowClosed": "Janela fechada",
-      "windowTitle": "Tempo restante para responder livremente na janela de 24 horas do WhatsApp"
+      "windowTitle": "Tempo restante para responder livremente na janela de 24 horas do WhatsApp",
+      "filterMine": "Meus",
+      "filterUnassigned": "Sem atribuição",
+      "status": "Status",
+      "anyStatus": "Qualquer status",
+      "clearFilters": "Limpar filtros",
+      "pinned": "Fixada",
+      "pin": "Fixar conversa",
+      "unpin": "Desafixar conversa"
     },
     "messageThread": {
       "backToConversations": "Voltar às conversas",
@@ -385,7 +393,27 @@
       "deals": "Negócios",
       "noTags": "Sem tags",
       "noDeals": "Sem negócios",
-      "addNotePlaceholder": "Adicionar uma nota..."
+      "addNotePlaceholder": "Adicionar uma nota...",
+      "name": "Nome",
+      "email": "E-mail",
+      "company": "Empresa",
+      "addEmail": "Adicionar e-mail",
+      "addCompany": "Adicionar empresa",
+      "assignee": "Responsável",
+      "unassigned": "Sem atribuição",
+      "unassign": "Remover atribuição",
+      "addTag": "Adicionar etiqueta",
+      "removeTag": "Remover etiqueta {name}",
+      "customFields": "Campos personalizados",
+      "emptyValue": "Adicionar valor",
+      "dealValue": "Valor do negócio",
+      "stage": "Etapa",
+      "addNote": "Adicionar nota",
+      "activity": "Atividade recente",
+      "activityContactAdded": "Contato adicionado",
+      "activityConversation": "Conversa iniciada",
+      "activityDeal": "Negócio “{title}” criado",
+      "activityNote": "Nota adicionada"
     },
     "aiBanner": {
       "pausedTitle": "O assistente de IA está pausado aqui",
@@ -452,7 +480,8 @@
       "viewUntitled": "Minha visualização",
       "removeView": "Remover a visualização {name}",
       "previousPage": "Página anterior",
-      "nextPage": "Próxima página"
+      "nextPage": "Próxima página",
+      "segmentHint": "Primeiro busque ou escolha etiquetas e depois salve como segmento."
     },
     "form": {
       "addTitle": "Adicionar contato",
@@ -775,7 +804,12 @@
       "errorLoad": "Falha ao carregar os disparos",
       "broadcastInProgress": "Disparo em andamento",
       "retry": "Tentar novamente",
-      "replied": "Respondidos"
+      "replied": "Respondidos",
+      "bucket_drafts": "Transmissões em rascunho",
+      "bucket_scheduled": "Transmissões agendadas",
+      "bucket_sent": "Transmissões enviadas",
+      "bucketEmpty": "Ainda não há nada aqui",
+      "showAll": "Ver todas as transmissões"
     },
     "status": {
       "draft": "Rascunho",
@@ -1958,7 +1992,10 @@
       "active": "Ativo",
       "accentColor": "Cor de destaque",
       "useTheme": "Usar o tema {name}",
-      "themeId": "ID do tema: {id}"
+      "themeId": "ID do tema: {id}",
+      "soundTitle": "Som",
+      "soundLabel": "Som de nova mensagem",
+      "soundDesc": "Um aviso suave quando uma conversa recebe uma nova mensagem não lida. Salvo neste dispositivo."
     },
     "security": {
       "title": "Login e segurança",
@@ -2932,5 +2969,75 @@
     "tooltipConnected": "O WhatsApp está conectado e recebendo mensagens",
     "tooltipDisconnected": "O WhatsApp está desconectado — clique para reconectar",
     "tooltipNotConfigured": "Conecte seu número de WhatsApp para começar a conversar"
+  },
+  "Shell": {
+    "primaryNav": "Principal",
+    "togglePanel": "Mostrar ou ocultar painel",
+    "collapsePanel": "Recolher painel",
+    "closePanel": "Fechar painel",
+    "resizePanel": "Redimensionar painel",
+    "closeDetails": "Fechar detalhes",
+    "unreadCount": "{count} não lidas",
+    "whatsappDown": "WhatsApp não está conectado",
+    "accountMenu": "Menu da conta",
+    "shortcuts": "Atalhos de teclado",
+    "undo": "Desfazer",
+    "movedTo": "Movido para {stage}",
+    "dealWon": "Negócio ganho",
+    "saveFailed": "Não foi possível salvar; a alteração foi desfeita",
+    "assignedTo": "Atribuído a {name}",
+    "unassigned": "Sem atribuição",
+    "tagRemoved": "Etiqueta {name} removida",
+    "contacts": {
+      "search": "Buscar contatos",
+      "segments": "Segmentos",
+      "all": "Todos os contatos",
+      "newThisWeek": "Novos nesta semana",
+      "byTag": "Por etiqueta",
+      "noTags": "Ainda não há etiquetas",
+      "saved": "Segmentos salvos",
+      "savedHint": "Filtre a lista e salve aqui.",
+      "newSegment": "Novo segmento",
+      "removeSegment": "Remover segmento {name}"
+    },
+    "pipelines": {
+      "add": "Adicionar pipeline",
+      "empty": "Ainda não há pipelines",
+      "deals": "{count, plural, =1 {# negócio} other {# negócios}}"
+    },
+    "broadcasts": {
+      "new": "Nova transmissão",
+      "all": "Todas as transmissões",
+      "drafts": "Rascunhos",
+      "scheduled": "Agendadas",
+      "sent": "Enviadas"
+    },
+    "automate": {
+      "overview": "Tudo: {name}",
+      "on": "Ativo",
+      "off": "Inativo",
+      "notSetUp": "Não configurado",
+      "more": "Mais {count}",
+      "newAutomation": "Nova automação",
+      "newFlow": "Novo fluxo",
+      "agent": "Agente de IA",
+      "setUpAgent": "Configurar agente de IA",
+      "playground": "Área de testes"
+    },
+    "shortcutsSheet": {
+      "title": "Atalhos de teclado",
+      "description": "Pressione ? em qualquer lugar para abrir esta lista.",
+      "general": "Geral",
+      "palette": "Busca e comandos",
+      "togglePanel": "Mostrar ou ocultar painel",
+      "closePanels": "Fechar painel ou conversa",
+      "help": "Esta ajuda",
+      "goTo": "Ir para",
+      "nextChat": "Conversa anterior / próxima",
+      "openChat": "Abrir conversa",
+      "quickReplies": "Respostas rápidas (caixa vazia)",
+      "send": "Enviar mensagem",
+      "newLine": "Nova linha"
+    }
   }
 }

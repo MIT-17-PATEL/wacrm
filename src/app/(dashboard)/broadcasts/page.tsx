@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Broadcast } from '@/types';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
 import { Megaphone, Plus, Users } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
-import { getBroadcastStatus } from '@/lib/broadcast-status';
+import { broadcastBucket, getBroadcastStatus, isBroadcastBucket } from '@/lib/broadcast-status';
 import { useFormatter, useTranslations } from 'next-intl';
 
 /**
@@ -63,8 +63,20 @@ function RateBar({
   );
 }
 
+// `useSearchParams` (`?status=`, set by the context panel) needs a
+// Suspense boundary for static prerendering.
 export default function BroadcastsPage() {
+  return (
+    <Suspense fallback={null}>
+      <BroadcastsPageInner />
+    </Suspense>
+  );
+}
+
+function BroadcastsPageInner() {
   const router = useRouter();
+  const statusParam = useSearchParams().get('status');
+  const bucket = isBroadcastBucket(statusParam) ? statusParam : null;
   const t = useTranslations('Broadcasts.page');
   const tStatus = useTranslations('Broadcasts.status');
   const tGate = useTranslations('GatedButton');
@@ -97,6 +109,11 @@ export default function BroadcastsPage() {
   useEffect(() => {
     fetchBroadcasts();
   }, []);
+
+  const visible = useMemo(
+    () => (bucket ? broadcasts.filter((b) => broadcastBucket(b.status) === bucket) : broadcasts),
+    [broadcasts, bucket],
+  );
 
   const anySending = useMemo(
     () => broadcasts.some((b) => b.status === 'sending'),
@@ -196,7 +213,7 @@ export default function BroadcastsPage() {
       <PageHeader
         tile=""
         icon={Megaphone}
-        title={t('title')}
+        title={bucket ? t(`bucket_${bucket}`) : t('title')}
         description={t('subtitle')}
         actions={
           <GatedButton
@@ -228,9 +245,22 @@ export default function BroadcastsPage() {
             }
           />
         </div>
+      ) : visible.length === 0 ? (
+        <div className="surface">
+          <EmptyState
+            compact
+            illustration="broadcast"
+            title={t('bucketEmpty')}
+            action={
+              <Link href="/broadcasts" className={buttonVariants({ variant: 'outline' })}>
+                {t('showAll')}
+              </Link>
+            }
+          />
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {broadcasts.map((broadcast) => {
+          {visible.map((broadcast) => {
             const status = getBroadcastStatus(broadcast.status);
             const total = broadcast.total_recipients;
             return (

@@ -27,7 +27,10 @@ export function SettingsRail({
   active,
   onSelect,
   hints,
+  variant = 'page',
 }: {
+  /** `panel`: always a vertical list (inside the shell's context panel). */
+  variant?: 'page' | 'panel';
   active: SettingsSection;
   onSelect: (section: SettingsSection) => void;
   hints?: Partial<Record<SettingsSection, ReactNode>>;
@@ -38,22 +41,26 @@ export function SettingsRail({
   // When horizontal (mobile), keep the active chip in view. On desktop
   // the rail is a static column, so skip.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || variant === 'panel') return;
     if (window.matchMedia(`(min-width: ${RAIL_DESKTOP_MIN_PX}px)`).matches) return;
     activeRef.current?.scrollIntoView({
       inline: 'center',
       block: 'nearest',
       behavior: 'smooth',
     });
-  }, [active]);
+  }, [active, variant]);
 
   return (
     <nav
       aria-label={t('sectionsNav')}
       className={cn(
-        'flex gap-1 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'border-b border-border',
-        'lg:sticky lg:top-0 lg:flex-col lg:overflow-visible lg:border-b-0 lg:pb-0',
+        variant === 'panel'
+          ? 'flex flex-col'
+          : cn(
+              'flex gap-1 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+              'border-b border-border',
+              'lg:sticky lg:top-0 lg:flex-col lg:overflow-visible lg:border-b-0 lg:pb-0',
+            ),
       )}
     >
       {RAIL_GROUPS.map(({ label, group }) => {
@@ -63,10 +70,18 @@ export function SettingsRail({
         return (
           <div
             key={group}
-            className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5"
+            className={cn(
+              'flex shrink-0',
+              variant === 'panel' ? 'flex-col gap-px' : 'gap-1 lg:flex-col lg:gap-0.5',
+            )}
           >
             {label ? (
-              <div className="hidden px-3 pt-3.5 pb-1.5 text-[11px] font-semibold text-muted-foreground lg:block">
+              <div
+                className={cn(
+                  'px-2.5 pt-3.5 pb-1 text-[11px] font-medium tracking-[0.06em] text-faint uppercase',
+                  variant === 'page' && 'hidden lg:block',
+                )}
+              >
                 {t(`groups.${group}`)}
               </div>
             ) : null}
@@ -84,7 +99,7 @@ export function SettingsRail({
                   className={cn(
                     SECTION_TILE[s],
                     'flex shrink-0 items-center gap-2.5 rounded-xl px-2 py-1.5 text-left text-sm font-medium whitespace-nowrap transition-colors',
-                    'lg:w-full',
+                    variant === 'panel' ? 'w-full' : 'lg:w-full',
                     isActive
                       ? 'bg-muted text-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',

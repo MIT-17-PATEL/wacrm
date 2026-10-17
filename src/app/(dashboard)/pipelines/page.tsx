@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Pipeline, PipelineStage, Deal } from "@/types";
 import { PipelineBoard } from "@/components/pipelines/pipeline-board";
@@ -33,6 +34,8 @@ import { useTranslations } from "next-intl";
 import { SquareKanban } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PIPELINES_CHANGED_EVENT, PIPELINE_CREATE_EVENT } from "@/lib/pipelines/events";
+import { celebrateWon, isWonStage } from "@/lib/pipelines/won";
 
 // Pipeline creation is admin-class (settings-tier write under
 // the new RLS); deal creation is operational and only requires
@@ -50,8 +53,21 @@ const SPEC_DEFAULT_STAGES = [
   { nameKey: "won", color: "#22c55e", position: 4 }, // green
 ] as const;
 
+// `useSearchParams` (`?pipeline=<id>`, set by the context panel) needs a
+// Suspense boundary for static prerendering.
 export default function PipelinesPage() {
+  return (
+    <Suspense fallback={null}>
+      <PipelinesPageInner />
+    </Suspense>
+  );
+}
+
+function PipelinesPageInner() {
   const t = useTranslations("Pipelines.page");
+  const tShell = useTranslations("Shell");
+  const router = useRouter();
+  const pipelineParam = useSearchParams().get("pipeline");
   const tGate = useTranslations("GatedButton");
   const supabase = createClient();
   const canEditSettings = useCan("edit-settings");
@@ -75,6 +91,37 @@ export default function PipelinesPage() {
   const [dealFormOpen, setDealFormOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [defaultStageId, setDefaultStageId] = useState<string>("");
+
+  // The context panel's pipeline list drives `?pipeline=`; adopt it once
+  // the list knows that id. The header dropdown writes the same param.
+  const [adoptedParam, setAdoptedParam] = useState<string | null>(null);
+  if (
+    pipelineParam &&
+    pipelineParam !== adoptedParam &&
+    pipelines.some((p) => p.id === pipelineParam)
+  ) {
+    setAdoptedParam(pipelineParam);
+    setSelectedPipelineId(pipelineParam);
+  }
+  const selectPipeline = useCallback(
+    (id: string) => {
+      setSelectedPipelineId(id);
+      router.replace(`/pipelines?pipeline=${id}`, { scroll: false });
+    },
+    [router],
+  );
+
+  // "+ Add pipeline" in the context panel opens the same dialog.
+  useEffect(() => {
+    const open = () => setNewPipelineOpen(true);
+    window.addEventListener(PIPELINE_CREATE_EVENT, open);
+    return () => window.removeEventListener(PIPELINE_CREATE_EVENT, open);
+  }, []);
+
+  // Tell the context panel its deal counts / totals may be stale.
+  useEffect(() => {
+    window.dispatchEvent(new Event(PIPELINES_CHANGED_EVENT));
+  }, [pipelines, deals]);
 
   // Guard against double-seeding (React StrictMode double-effect in dev).
   const seedAttempted = useRef(false);
@@ -221,7 +268,10 @@ export default function PipelinesPage() {
   }, [loadDeals, selectedPipelineId]);
 
   const handleDealMoved = useCallback(
-    async (dealId: string, newStageId: string) => {
+    async function move(dealId: string, newStageId: string, isUndo = false) {
+      // (An undo runs with a stale `deals` closure, so it skips this guard.)
+      const previousStageId = deals.find((d) => d.id === dealId)?.stage_id;
+      if (!isUndo && (!previousStageId || previousStageId === newStageId)) return;
       // Optimistic update — board already animated; just persist.
       setDeals((prev) =>
         prev.map((d) => (d.id === dealId ? { ...d, stage_id: newStageId } : d)),
@@ -233,9 +283,18 @@ export default function PipelinesPage() {
       if (error) {
         toast.error(t("toastFailedMoveDeal"));
         refreshDeals();
+        return;
       }
+      if (isUndo || !previousStageId) return;
+      const stage = stages.find((s) => s.id === newStageId);
+      if (isWonStage(stage)) celebrateWon();
+      // Reversible, so no confirm — just a 5s Undo.
+      toast(tShell("movedTo", { stage: stage?.name ?? "" }), {
+        duration: 5000,
+        action: { label: tShell("undo"), onClick: () => void move(dealId, previousStageId, true) },
+      });
     },
-    [supabase, refreshDeals, t],
+    [supabase, refreshDeals, t, tShell, deals, stages],
   );
 
   const handleAddDeal = useCallback(
@@ -354,7 +413,7 @@ export default function PipelinesPage() {
               {pipelines.map((p) => (
                 <DropdownMenuItem
                   key={p.id}
-                  onClick={() => setSelectedPipelineId(p.id)}
+                  onClick={() => selectPipeline(p.id)}
                   className={
                     p.id === selectedPipelineId
                       ? "text-primary"

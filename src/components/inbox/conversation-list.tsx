@@ -7,9 +7,17 @@ import {
   matchesContactFilters,
   normalizeConversations,
 } from "@/lib/inbox/conversations";
+import {
+  INBOX_VIEWS,
+  matchesInboxView,
+  sortConversations,
+  stepCursor,
+  type InboxView,
+  type StatusFilter,
+} from "@/lib/inbox/list-view";
 import { cn } from "@/lib/utils";
 import type { Conversation, ConversationStatus, Tag } from "@/types";
-import { Search, ChevronDown, X } from "lucide-react";
+import { Search, ChevronDown, X, Pin, PinOff } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
@@ -24,6 +32,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ContactAvatar } from "@/components/ui/contact-avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isTypingTarget } from "@/components/layout/keyboard-shortcuts";
+import { useAuth } from "@/hooks/use-auth";
+import { usePinnedConversations } from "@/hooks/use-pinned-conversations";
 
 /** Minimal teammate shape for the assignee avatar on each row. */
 interface AssigneeProfile {
@@ -44,6 +55,10 @@ interface ConversationListProps {
    * or the tab was throttled. Optional so existing callers keep working.
    */
   resyncToken?: number;
+  /** Chats that just received a message — their row briefly highlights. */
+  freshIds?: ReadonlySet<string>;
+  /** ↑/↓/Enter navigation; off while the list is hidden (phone chat view). */
+  keyboardNav?: boolean;
 }
 
 const STATUS_COLORS: Record<ConversationStatus, string> = {
@@ -52,9 +67,14 @@ const STATUS_COLORS: Record<ConversationStatus, string> = {
   closed: "bg-muted-foreground",
 };
 
-
-
-type InboxFilter = ConversationStatus | "all" | "unread";
+const STATUS_OPTIONS: StatusFilter[] = ["any", "open", "pending", "closed"];
+const VIEW_LABEL: Record<InboxView, string> = {
+  all: "filterAll",
+  mine: "filterMine",
+  unassigned: "filterUnassigned",
+  unread: "filterUnread",
+};
+const NO_FRESH: ReadonlySet<string> = new Set();
 
 export function ConversationList({
   activeConversationId,
@@ -62,19 +82,17 @@ export function ConversationList({
   conversations,
   onConversationsLoaded,
   resyncToken = 0,
+  freshIds = NO_FRESH,
+  keyboardNav = true,
 }: ConversationListProps) {
   const t = useTranslations("Inbox.conversationList");
-  
-  const FILTER_OPTIONS: { label: string; value: InboxFilter }[] = useMemo(() => [
-    { label: t("filterAll"), value: "all" },
-    { label: t("filterUnread"), value: "unread" },
-    { label: t("filterOpen"), value: "open" },
-    { label: t("filterPending"), value: "pending" },
-    { label: t("filterClosed"), value: "closed" },
-  ], [t]);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+  const [pinned, togglePin] = usePinnedConversations(userId);
 
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<InboxFilter>("all");
+  const [view, setView] = useState<InboxView>("all");
+  const [status, setStatus] = useState<StatusFilter>("any");
   const [loading, setLoading] = useState(true);
   // Contact-based filters (issue #272). Tags use OR logic (a conversation
   // matches if its contact carries any selected tag), consistent with
@@ -82,6 +100,8 @@ export function ConversationList({
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  // Keyboard cursor (↑/↓); Enter opens it. Falls back to the open chat.
+  const [cursorId, setCursorId] = useState<string | null>(null);
 
   // Keep the latest callback in a ref so the fetch effect below can
   // have a stable, empty-dep identity. Previously the fetch useCallback
@@ -192,14 +212,14 @@ export function ConversationList({
     return m;
   }, [tags]);
 
-  const filtered = useMemo(() => {
-    let result = conversations;
+  const unreadCount = useMemo(
+    () => conversations.filter((c) => c.unread_count > 0).length,
+    [conversations],
+  );
 
-    if (filter === "unread") {
-      result = result.filter((c) => c.unread_count > 0);
-    } else if (filter !== "all") {
-      result = result.filter((c) => c.status === filter);
-    }
+  const filtered = useMemo(() => {
+    let result = conversations.filter((c) => matchesInboxView(c, view, userId));
+    if (status !== "any") result = result.filter((c) => c.status === status);
 
     // Contact-based filters (tags via OR logic, exact company match).
     if (selectedTagIds.length > 0 || selectedCompany !== null) {
@@ -221,8 +241,8 @@ export function ConversationList({
       });
     }
 
-    return result;
-  }, [conversations, filter, search, selectedTagIds, selectedCompany]);
+    return sortConversations(result, pinned);
+  }, [conversations, view, status, userId, search, selectedTagIds, selectedCompany, pinned]);
 
   const toggleTag = useCallback((id: string) => {
     setSelectedTagIds((prev) =>
@@ -235,6 +255,14 @@ export function ConversationList({
     setSelectedCompany(null);
   }, []);
 
+  const clearAllFilters = useCallback(() => {
+    setSelectedTagIds([]);
+    setSelectedCompany(null);
+    setStatus("any");
+    setView("all");
+    setSearch("");
+  }, []);
+
   const hasContactFilters = selectedTagIds.length > 0 || selectedCompany !== null;
 
   const handleSearchChange = useCallback(
@@ -244,20 +272,49 @@ export function ConversationList({
     []
   );
 
+  // ↑/↓ move the cursor through the visible chats, Enter opens it —
+  // anywhere on the inbox page except while typing.
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!keyboardNav) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
+      if (document.querySelector("[role=dialog][data-open], [role=menu]")) return;
+      const ids = filtered.map((c) => c.id);
+      const current = cursorId && ids.includes(cursorId) ? cursorId : activeConversationId;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const next = stepCursor(ids, current, e.key === "ArrowDown" ? 1 : -1);
+        setCursorId(next);
+        if (next) {
+          listRef.current
+            ?.querySelector(`[data-conv-id="${next}"]`)
+            ?.scrollIntoView({ block: "nearest" });
+        }
+      } else if (e.key === "Enter" && current) {
+        const conv = filtered.find((c) => c.id === current);
+        if (conv) {
+          e.preventDefault();
+          onSelect(conv);
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [keyboardNav, filtered, cursorId, activeConversationId, onSelect]);
+
   const handleSelect = useCallback(
     (conv: Conversation) => {
+      setCursorId(conv.id);
       onSelect(conv);
     },
     [onSelect]
   );
 
   return (
-    // w-full on mobile so the list occupies the whole viewport when it's
-    // the single pane showing; fixed 320px on desktop where it shares the
-    // row with the thread + contact sidebar.
-    <div className="flex h-full w-full flex-col border-r border-border bg-card lg:w-[340px]">
+    <div className="flex h-full min-h-0 w-full flex-col">
       {/* Search + Filter */}
-      <div className="space-y-2.5 border-b border-border p-3">
+      <div className="space-y-2 border-b border-border px-3 pb-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -265,36 +322,64 @@ export function ConversationList({
             onChange={handleSearchChange}
             placeholder={t("searchPlaceholder")}
             aria-label={t("searchPlaceholder")}
-            className="h-10 rounded-xl pl-9 text-sm"
+            className="h-9 rounded-lg pl-9 text-[13px]"
           />
         </div>
 
-        {/* Status filter as chips — one tap instead of a dropdown. */}
-        <div
-          role="tablist"
-          aria-label={t("filterLabel")}
-          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-0.5"
-        >
-          {FILTER_OPTIONS.map((opt) => (
+        {/* All / Mine / Unassigned / Unread — one tap each. */}
+        <div role="tablist" aria-label={t("filterLabel")} className="grid grid-cols-4 gap-0.5 rounded-lg bg-muted p-0.5">
+          {INBOX_VIEWS.map((v) => (
             <button
-              key={opt.value}
+              key={v}
               type="button"
               role="tab"
-              aria-selected={filter === opt.value}
-              onClick={() => setFilter(opt.value)}
+              aria-selected={view === v}
+              onClick={() => setView(v)}
               className={cn(
-                "shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors",
-                filter === opt.value
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                "inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-medium transition-colors duration-150",
+                view === v
+                  ? "bg-card text-foreground shadow-card"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {opt.label}
+              <span className="truncate">{t(VIEW_LABEL[v])}</span>
+              {v === "unread" && unreadCount > 0 ? (
+                <span className="text-[10px] text-muted-foreground tabular-nums">{unreadCount}</span>
+              ) : null}
             </button>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={cn(
+                "inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-muted",
+                status !== "any" ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {status === "any" ? t("status") : t(`status_${status}`)}
+              <ChevronDown className="h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44 border-border bg-popover">
+              {STATUS_OPTIONS.map((s) => (
+                <DropdownMenuItem
+                  key={s}
+                  onClick={() => setStatus(s)}
+                  className={cn("text-sm", status === s ? "text-primary" : "text-popover-foreground")}
+                >
+                  {s === "any" ? (
+                    t("anyStatus")
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <span className={cn("size-2 rounded-full", STATUS_COLORS[s])} />
+                      {t(`status_${s}`)}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {tags.length > 0 && (
             <DropdownMenu>
@@ -445,18 +530,32 @@ export function ConversationList({
         ) : filtered.length === 0 ? (
           <EmptyState
             compact
-            className=""
             illustration={conversations.length === 0 ? "chat" : "search"}
             title={conversations.length === 0 ? t("noConversations") : t("noMatches")}
+            action={
+              conversations.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="text-[13px] font-medium text-primary hover:underline"
+                >
+                  {t("clearFilters")}
+                </button>
+              ) : undefined
+            }
           />
         ) : (
-          <div className="flex flex-col gap-0.5 p-2">
+          <div ref={listRef} className="flex flex-col gap-0.5 p-2">
             {filtered.map((conv) => (
               <ConversationItem
                 key={conv.id}
                 conversation={conv}
                 isActive={conv.id === activeConversationId}
+                isCursor={conv.id === cursorId && conv.id !== activeConversationId}
+                isPinned={pinned.has(conv.id)}
+                isFresh={freshIds.has(conv.id)}
                 onSelect={handleSelect}
+                onTogglePin={togglePin}
                 t={t}
                 assignee={
                   conv.assigned_agent_id ? (assignees.get(conv.assigned_agent_id) ?? null) : null
@@ -474,7 +573,13 @@ export function ConversationList({
 interface ConversationItemProps {
   conversation: Conversation;
   isActive: boolean;
+  /** Keyboard cursor (↑/↓) sits here. */
+  isCursor: boolean;
+  isPinned: boolean;
+  /** Just received a message — play the row highlight. */
+  isFresh: boolean;
   onSelect: (conversation: Conversation) => void;
+  onTogglePin: (conversationId: string) => void;
   t: ReturnType<typeof useTranslations>;
   assignee: AssigneeProfile | null;
   /** Current time (ms), ticked by the list so items stay pure. */
@@ -495,7 +600,11 @@ function windowLeft(conversation: Conversation, now: number): number | null {
 function ConversationItem({
   conversation,
   isActive,
+  isCursor,
+  isPinned,
+  isFresh,
   onSelect,
+  onTogglePin,
   t,
   assignee,
   now,
@@ -517,102 +626,129 @@ function ConversationItem({
     : "";
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      aria-current={isActive ? "true" : undefined}
+    <div
+      data-conv-id={conversation.id}
       className={cn(
-        "group relative flex w-full items-start gap-3 rounded-lg px-2.5 py-2.5 text-left transition-colors",
+        "group relative rounded-lg transition-colors duration-150",
         isActive ? "bg-accent" : "hover:bg-accent/50",
+        isCursor && "ring-1 ring-border-strong",
       )}
     >
-
-      <span className="relative">
-        <ContactAvatar
-          name={displayName}
-          seed={contact?.id ?? displayName}
-          src={contact?.avatar_url}
-        />
+      {/* Keyed on the message time so a new message replays the flash. */}
+      {isFresh && !isActive ? (
         <span
-          className={cn(
-            "absolute -right-0.5 -bottom-0.5 size-3 rounded-full ring-2 ring-card",
-            STATUS_COLORS[conversation.status],
-          )}
-          title={t(`status_${conversation.status}`)}
+          key={conversation.last_message_at}
+          aria-hidden
+          className="animate-row-flash pointer-events-none absolute inset-0 rounded-lg"
         />
-      </span>
-
-      <span className="min-w-0 flex-1">
-        <span className="flex items-baseline justify-between gap-2">
+      ) : null}
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-current={isActive ? "true" : undefined}
+        className="relative flex w-full items-start gap-3 rounded-lg px-2.5 py-2.5 text-left"
+      >
+        <span className="relative">
+          <ContactAvatar
+            name={displayName}
+            seed={contact?.id ?? displayName}
+            src={contact?.avatar_url}
+          />
           <span
             className={cn(
-              "truncate text-sm text-foreground",
-              unread ? "font-semibold" : "font-medium",
+              "absolute -right-0.5 -bottom-0.5 size-3 rounded-full ring-2 ring-card",
+              STATUS_COLORS[conversation.status],
             )}
-          >
-            {displayName}
-          </span>
-          <span
-            className={cn(
-              "shrink-0 text-[11px] tabular-nums",
-              unread ? "font-medium text-foreground" : "text-muted-foreground",
-            )}
-          >
-            {timeAgo}
-          </span>
+            title={t(`status_${conversation.status}`)}
+          />
         </span>
-        <span className="mt-0.5 flex items-center justify-between gap-2">
-          <span
-            className={cn(
-              "truncate text-[13px]",
-              unread ? "text-foreground/85" : "text-muted-foreground",
-            )}
-          >
-            {conversation.last_message_text || t("noMessagesYet")}
+
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline justify-between gap-2">
+            <span
+              className={cn(
+                "flex min-w-0 items-center gap-1 truncate text-sm text-foreground",
+                unread ? "font-semibold" : "font-medium",
+              )}
+            >
+              <span className="truncate">{displayName}</span>
+              {isPinned ? (
+                <Pin aria-label={t("pinned")} className="size-3 shrink-0 rotate-45 text-muted-foreground" />
+              ) : null}
+            </span>
+            <span
+              className={cn(
+                "shrink-0 text-[11px] tabular-nums transition-opacity duration-150 group-hover:opacity-0",
+                unread ? "font-medium text-primary" : "text-muted-foreground",
+              )}
+            >
+              {timeAgo}
+            </span>
           </span>
-          {unread ? (
-            <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold text-background tabular-nums">
-              {conversation.unread_count > 99 ? "99+" : conversation.unread_count}
+          <span className="mt-0.5 flex items-center justify-between gap-2">
+            <span
+              className={cn(
+                "truncate text-[13px]",
+                unread ? "text-foreground/85" : "text-muted-foreground",
+              )}
+            >
+              {conversation.last_message_text || t("noMessagesYet")}
+            </span>
+            {unread ? (
+              <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground tabular-nums">
+                {conversation.unread_count > 99 ? "99+" : conversation.unread_count}
+              </span>
+            ) : null}
+          </span>
+
+          {tags.length > 0 || left !== null || assignee ? (
+            <span className="mt-2 flex items-center gap-1.5">
+              {left !== null ? <WindowChip ms={left} t={t} /> : null}
+              {tags.slice(0, 2).map((tag) => (
+                <span
+                  key={tag.id}
+                  className="inline-flex max-w-24 items-center gap-1 truncate rounded border border-border px-1 text-[11px] text-muted-foreground"
+                >
+                  <span
+                    className="size-1.5 shrink-0 rounded-full"
+                    // Tag colour is user data, picked per tag in Settings.
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  <span className="truncate">{tag.name}</span>
+                </span>
+              ))}
+              {tags.length > 2 ? (
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  +{tags.length - 2}
+                </span>
+              ) : null}
+              {assignee ? (
+                <span className="ml-auto" title={t("assignedTo", { name: assignee.full_name })}>
+                  <ContactAvatar
+                    name={assignee.full_name || "?"}
+                    seed={assignee.user_id}
+                    src={assignee.avatar_url}
+                    size="xs"
+                    className="size-5 text-[9px]"
+                  />
+                </span>
+              ) : null}
             </span>
           ) : null}
         </span>
+      </button>
 
-        {tags.length > 0 || left !== null || assignee ? (
-          <span className="mt-2 flex items-center gap-1.5">
-            {left !== null ? <WindowChip ms={left} t={t} /> : null}
-            {tags.slice(0, 2).map((tag) => (
-              <span
-                key={tag.id}
-                className="inline-flex max-w-24 items-center gap-1 truncate rounded border border-border px-1 text-[11px] text-muted-foreground"
-              >
-                <span
-                  className="size-1.5 shrink-0 rounded-full"
-                  // Tag colour is user data, picked per tag in Settings.
-                  style={{ backgroundColor: tag.color }}
-                />
-                <span className="truncate">{tag.name}</span>
-              </span>
-            ))}
-            {tags.length > 2 ? (
-              <span className="text-[10px] font-medium text-muted-foreground">
-                +{tags.length - 2}
-              </span>
-            ) : null}
-            {assignee ? (
-              <span className="ml-auto" title={t("assignedTo", { name: assignee.full_name })}>
-                <ContactAvatar
-                  name={assignee.full_name || "?"}
-                  seed={assignee.user_id}
-                  src={assignee.avatar_url}
-                  size="xs"
-                  className="size-5 text-[9px]"
-                />
-              </span>
-            ) : null}
-          </span>
-        ) : null}
-      </span>
-    </button>
+      {/* Pin / unpin — shows on hover or keyboard focus, over the time. */}
+      <button
+        type="button"
+        onClick={() => onTogglePin(conversation.id)}
+        aria-label={isPinned ? t("unpin") : t("pin")}
+        title={isPinned ? t("unpin") : t("pin")}
+        className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-card hover:text-foreground focus-visible:opacity-100"
+      >
+        {isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+      </button>
+    </div>
   );
 }
 

@@ -24,8 +24,7 @@ import {
   Clock,
   ArrowLeft,
   RefreshCw,
-  PanelRightOpen,
-  PanelRightClose,
+  Info,
 } from "lucide-react";
 import { format, isToday, isYesterday, differenceInHours } from "date-fns";
 import { useTranslations } from "next-intl";
@@ -846,7 +845,10 @@ export function MessageThread({
   const handleAssignChange = useCallback(
     async (agentId: string | null) => {
       if (!conversation) return;
+      const previous = conversation.assigned_agent_id ?? null;
 
+      // Optimistic: show the new assignee now, revert if the write fails.
+      onAssignChange(conversation.id, agentId);
       const supabase = createClient();
       const { error } = await supabase
         .from("conversations")
@@ -855,11 +857,9 @@ export function MessageThread({
 
       if (error) {
         console.error("Failed to update assignment:", error);
+        onAssignChange(conversation.id, previous);
         toast.error(t("assignmentUpdateFailed"));
-        return;
       }
-
-      onAssignChange(conversation.id, agentId);
     },
     [conversation, onAssignChange, t],
   );
@@ -951,15 +951,11 @@ export function MessageThread({
               title={contactPanelOpen ? t("hideContact") : t("showContact")}
               aria-pressed={contactPanelOpen}
               className={cn(
-                "hidden h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted hover:text-foreground lg:inline-flex",
-                contactPanelOpen ? "text-primary" : "text-muted-foreground",
+                "inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-150 hover:bg-muted hover:text-foreground",
+                contactPanelOpen ? "bg-accent text-foreground" : "text-muted-foreground",
               )}
             >
-              {contactPanelOpen ? (
-                <PanelRightClose className="h-4 w-4" />
-              ) : (
-                <PanelRightOpen className="h-4 w-4" />
-              )}
+              <Info className="h-4 w-4" />
             </button>
           )}
 

@@ -82,6 +82,66 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   SETTINGS_NAV_ITEM,
 ];
 
+/* ------------------------------------------------------------------ */
+/* Icon rail (WhatsApp-Web style): one icon per module.                 */
+/* ------------------------------------------------------------------ */
+
+export type RailModuleKey =
+  | "dashboard"
+  | "inbox"
+  | "contacts"
+  | "pipelines"
+  | "broadcasts"
+  | "automate";
+
+export interface RailItem {
+  key: RailModuleKey;
+  href: string;
+  icon: LucideIcon;
+  /** Second key of the "G then <key>" jump shortcut. */
+  shortcut: string;
+  /** Route prefixes this rail icon owns. */
+  owns: string[];
+}
+
+export const RAIL_ITEMS: RailItem[] = [
+  { key: "dashboard", href: "/dashboard", icon: LayoutDashboard, shortcut: "d", owns: ["/dashboard"] },
+  { key: "inbox", href: "/inbox", icon: MessagesSquare, shortcut: "i", owns: ["/inbox"] },
+  { key: "contacts", href: "/contacts", icon: Users, shortcut: "c", owns: ["/contacts"] },
+  { key: "pipelines", href: "/pipelines", icon: SquareKanban, shortcut: "p", owns: ["/pipelines"] },
+  { key: "broadcasts", href: "/broadcasts", icon: Megaphone, shortcut: "b", owns: ["/broadcasts"] },
+  {
+    key: "automate",
+    href: "/automations",
+    icon: Zap,
+    shortcut: "a",
+    owns: ["/automations", "/flows", "/agents"],
+  },
+];
+
+/** "G then <key>" jump targets, including the rail's bottom icons. */
+export const GOTO_SHORTCUTS: Record<string, string> = {
+  ...Object.fromEntries(RAIL_ITEMS.map((i) => [i.shortcut, i.href])),
+  n: "/notifications",
+  s: "/settings",
+};
+
+/** Which context panel a route shows. `null` = no panel (full width). */
+export type PanelModuleKey = Exclude<RailModuleKey, "dashboard"> | "settings";
+
+export function railItemForPath(pathname: string): RailItem | null {
+  return RAIL_ITEMS.find((i) => i.owns.some((p) => isActivePath(pathname, p))) ?? null;
+}
+
+export function panelModuleForPath(pathname: string): PanelModuleKey | null {
+  if (isActivePath(pathname, "/settings")) return "settings";
+  // The flow editor canvas needs every pixel; it keeps its own chrome.
+  if (/^\/flows\/[^/]+$/.test(pathname)) return null;
+  const item = railItemForPath(pathname);
+  if (!item || item.key === "dashboard") return null;
+  return item.key;
+}
+
 /** Which group a module belongs to (for the breadcrumb). */
 export function groupOf(module: ModuleKey): NavGroupKey | null {
   return NAV_GROUPS.find((g) => g.items.some((i) => i.module === module))?.key ?? null;

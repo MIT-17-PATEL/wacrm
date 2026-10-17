@@ -211,7 +211,15 @@
       "windowHours": "{hours}h left",
       "windowMinutes": "{minutes}m left",
       "windowClosed": "Window closed",
-      "windowTitle": "Time left to reply freely in WhatsApp's 24-hour window"
+      "windowTitle": "Time left to reply freely in WhatsApp's 24-hour window",
+      "filterMine": "Mine",
+      "filterUnassigned": "Unassigned",
+      "status": "Status",
+      "anyStatus": "Any status",
+      "clearFilters": "Clear filters",
+      "pinned": "Pinned",
+      "pin": "Pin chat",
+      "unpin": "Unpin chat"
     },
     "messageThread": {
       "backToConversations": "Back to conversations",
@@ -385,7 +393,27 @@
       "deals": "Deals",
       "noTags": "No tags",
       "noDeals": "No deals",
-      "addNotePlaceholder": "Add a note..."
+      "addNotePlaceholder": "Add a note...",
+      "name": "Name",
+      "email": "Email",
+      "company": "Company",
+      "addEmail": "Add email",
+      "addCompany": "Add company",
+      "assignee": "Assignee",
+      "unassigned": "Unassigned",
+      "unassign": "Unassign",
+      "addTag": "Add tag",
+      "removeTag": "Remove tag {name}",
+      "customFields": "Custom fields",
+      "emptyValue": "Add value",
+      "dealValue": "Deal value",
+      "stage": "Stage",
+      "addNote": "Add note",
+      "activity": "Recent activity",
+      "activityContactAdded": "Contact added",
+      "activityConversation": "Conversation started",
+      "activityDeal": "Deal “{title}” created",
+      "activityNote": "Note added"
     },
     "aiBanner": {
       "pausedTitle": "AI assistant is paused here",
@@ -452,7 +480,8 @@
       "viewUntitled": "My view",
       "removeView": "Remove view {name}",
       "previousPage": "Previous page",
-      "nextPage": "Next page"
+      "nextPage": "Next page",
+      "segmentHint": "Search or pick tags first, then save it as a segment."
     },
     "form": {
       "addTitle": "Add Contact",
@@ -775,7 +804,12 @@
       "errorLoad": "Failed to load broadcasts",
       "broadcastInProgress": "Broadcast in progress",
       "retry": "Retry",
-      "replied": "Replied"
+      "replied": "Replied",
+      "bucket_drafts": "Draft broadcasts",
+      "bucket_scheduled": "Scheduled broadcasts",
+      "bucket_sent": "Sent broadcasts",
+      "bucketEmpty": "Nothing here yet",
+      "showAll": "Show all broadcasts"
     },
     "status": {
       "draft": "Draft",
@@ -1958,7 +1992,10 @@
       "active": "Active",
       "accentColor": "Accent color",
       "useTheme": "Use {name} theme",
-      "themeId": "Theme id: {id}"
+      "themeId": "Theme id: {id}",
+      "soundTitle": "Sound",
+      "soundLabel": "New message sound",
+      "soundDesc": "A soft chime when a chat gets a new unread message. Saved on this device."
     },
     "security": {
       "title": "Login & security",
@@ -2932,5 +2969,75 @@
     "tooltipConnected": "WhatsApp is connected and receiving messages",
     "tooltipDisconnected": "WhatsApp is disconnected — click to reconnect",
     "tooltipNotConfigured": "Connect your WhatsApp number to start chatting"
+  },
+  "Shell": {
+    "primaryNav": "Primary",
+    "togglePanel": "Toggle panel",
+    "collapsePanel": "Collapse panel",
+    "closePanel": "Close panel",
+    "resizePanel": "Resize panel",
+    "closeDetails": "Close details",
+    "unreadCount": "{count} unread",
+    "whatsappDown": "WhatsApp is not connected",
+    "accountMenu": "Account menu",
+    "shortcuts": "Keyboard shortcuts",
+    "undo": "Undo",
+    "movedTo": "Moved to {stage}",
+    "dealWon": "Deal won",
+    "saveFailed": "Couldn't save — change undone",
+    "assignedTo": "Assigned to {name}",
+    "unassigned": "Unassigned",
+    "tagRemoved": "Removed tag {name}",
+    "contacts": {
+      "search": "Search contacts",
+      "segments": "Segments",
+      "all": "All contacts",
+      "newThisWeek": "New this week",
+      "byTag": "By tag",
+      "noTags": "No tags yet",
+      "saved": "Saved segments",
+      "savedHint": "Filter the list, then save it here.",
+      "newSegment": "New segment",
+      "removeSegment": "Remove segment {name}"
+    },
+    "pipelines": {
+      "add": "Add pipeline",
+      "empty": "No pipelines yet",
+      "deals": "{count, plural, =1 {# deal} other {# deals}}"
+    },
+    "broadcasts": {
+      "new": "New broadcast",
+      "all": "All broadcasts",
+      "drafts": "Drafts",
+      "scheduled": "Scheduled",
+      "sent": "Sent"
+    },
+    "automate": {
+      "overview": "All {name}",
+      "on": "On",
+      "off": "Off",
+      "notSetUp": "Not set up",
+      "more": "{count} more",
+      "newAutomation": "New automation",
+      "newFlow": "New flow",
+      "agent": "AI agent",
+      "setUpAgent": "Set up AI agent",
+      "playground": "Playground"
+    },
+    "shortcutsSheet": {
+      "title": "Keyboard shortcuts",
+      "description": "Press ? anywhere to open this list.",
+      "general": "General",
+      "palette": "Search & commands",
+      "togglePanel": "Show / hide panel",
+      "closePanels": "Close panel or chat",
+      "help": "This help",
+      "goTo": "Go to",
+      "nextChat": "Previous / next chat",
+      "openChat": "Open chat",
+      "quickReplies": "Quick replies (empty box)",
+      "send": "Send message",
+      "newLine": "New line"
+    }
   }
 }

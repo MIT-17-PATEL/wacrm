@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Loader2,
   CircleCheck,
   CircleAlert,
   Clock,
@@ -148,9 +148,7 @@ export default function FlowRunsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <PageSkeleton />
     );
   }
   if (notFound || !flow) {

@@ -1,8 +1,10 @@
 "use client";
 
-import { Check, Moon, Palette, SunMoon, Sun } from "lucide-react";
+import { Bell, Check, Moon, Palette, SunMoon, Sun } from "lucide-react";
 
 import { useTheme } from "@/hooks/use-theme";
+import { playMessageSound, useSoundPref } from "@/hooks/use-sound-pref";
+import { Switch } from "@/components/ui/switch";
 import { MODES, THEMES, type Mode, type ThemeId } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -23,6 +25,7 @@ import { SettingsPanelHead } from "./settings-panel-head";
 export function AppearancePanel() {
   const { theme, setTheme, mode, setMode } = useTheme();
   const t = useTranslations("Settings.appearance");
+  const [soundOn, setSoundOn] = useSoundPref();
 
   return (
     <section className="max-w-3xl animate-in fade-in-50 duration-200">
@@ -72,6 +75,28 @@ export function AppearancePanel() {
             />
           ))}
         </div>
+      </div>
+
+      <div className="mt-8 space-y-4">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Bell className="size-4 text-muted-foreground" />
+          {t("soundTitle")}
+        </h3>
+        <label className="surface flex cursor-pointer items-center gap-4 p-4">
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-foreground">{t("soundLabel")}</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">{t("soundDesc")}</span>
+          </span>
+          <Switch
+            checked={soundOn}
+            onCheckedChange={(on) => {
+              setSoundOn(on);
+              // Preview it — and the click unlocks audio in the browser.
+              if (on) playMessageSound();
+            }}
+            aria-label={t("soundLabel")}
+          />
+        </label>
       </div>
     </section>
   );

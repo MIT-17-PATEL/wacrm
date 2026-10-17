@@ -19,6 +19,15 @@ import { Megaphone, PlugZap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ContextPanel } from "@/components/layout/context-panel";
+import { isTypingTarget } from "@/components/layout/keyboard-shortcuts";
+import { DOCK_QUERY, useShell } from "@/components/layout/shell-context";
+import { useMediaQuery } from "@/hooks/use-media-query";
+
+/** At/above this the details panel docks; below it, it's an overlay drawer. */
+const DETAILS_DOCK_QUERY = "(min-width: 1280px)";
+/** How long a chat row stays highlighted after a new message. */
+const FRESH_MS = 2000;
 
 // Remembers the agent's show/hide choice for the desktop contact panel
 // across reloads and sessions (device-scoped, like the theme prefs).
@@ -38,6 +47,15 @@ export default function InboxPage() {
 function InboxPageInner() {
   const t = useTranslations("Inbox.page");
   const tThread = useTranslations("Inbox.messageThread");
+  const tNav = useTranslations("Nav");
+  const tShell = useTranslations("Shell");
+  const { setChatOpen } = useShell();
+  const listDocked = useMediaQuery(DOCK_QUERY);
+  const detailsDockable = useMediaQuery(DETAILS_DOCK_QUERY);
+  // Below 1280px the details panel is an overlay, closed by default.
+  const [detailsOverlayOpen, setDetailsOverlayOpen] = useState(false);
+  // Chats that just received a customer message (row highlight).
+  const [freshIds, setFreshIds] = useState<ReadonlySet<string>>(() => new Set());
   const router = useRouter();
   const searchParams = useSearchParams();
   /**
@@ -87,6 +105,10 @@ function InboxPageInner() {
   }, []);
 
   const handleToggleContactPanel = useCallback(() => {
+    if (!window.matchMedia(DETAILS_DOCK_QUERY).matches) {
+      setDetailsOverlayOpen((v) => !v);
+      return;
+    }
     setContactPanelOpen((prev) => {
       const next = !prev;
       try {
@@ -247,6 +269,21 @@ function InboxPageInner() {
         // the preview and triggering a hydrate — see the comment on
         // knownConvIdsRef for why a closure flag inside the updater would
         // always read false here.
+        if (
+          newMsg.sender_type === "customer" &&
+          newMsg.conversation_id !== activeConversation?.id
+        ) {
+          const id = newMsg.conversation_id;
+          setFreshIds((prev) => new Set(prev).add(id));
+          window.setTimeout(() => {
+            setFreshIds((prev) => {
+              const next = new Set(prev);
+              next.delete(id);
+              return next;
+            });
+          }, FRESH_MS);
+        }
+
         if (knownConvIdsRef.current.has(newMsg.conversation_id)) {
           setConversations((prev) =>
             prev.map((c) =>
@@ -511,6 +548,15 @@ function InboxPageInner() {
   }, [router]);
 
 
+  // Edits made in the details panel (name, email, company) show in the
+  // list row and thread header straight away.
+  const handleContactChange = useCallback((next: Contact) => {
+    setActiveContact(next);
+    setConversations((prev) =>
+      prev.map((c) => (c.contact_id === next.id ? { ...c, contact: { ...c.contact, ...next } } : c)),
+    );
+  }, []);
+
   const handleMessagesLoaded = useCallback((loaded: Message[]) => {
     setMessages(loaded);
   }, []);
@@ -569,6 +615,36 @@ function InboxPageInner() {
   // it back to the list. On lg+ both panes render side-by-side as
   // before, unchanged.
   const hasActiveConv = !!activeConversation;
+  const noConversations = listLoaded && conversations.length === 0;
+  const detailsOpen = detailsDockable ? contactPanelOpen : detailsOverlayOpen;
+
+  // Phones hide the tab bar while a chat is open full-screen.
+  useEffect(() => {
+    setChatOpen(hasActiveConv);
+    return () => setChatOpen(false);
+  }, [hasActiveConv, setChatOpen]);
+
+  // Esc: close the details overlay first, then the open chat.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || isTypingTarget(e.target)) return;
+      if (document.querySelector("[role=dialog][data-open], [role=menu]")) return;
+      if (!detailsDockable && detailsOverlayOpen) setDetailsOverlayOpen(false);
+      else if (hasActiveConv) handleCloseConversation();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [detailsDockable, detailsOverlayOpen, hasActiveConv, handleCloseConversation]);
+
+  const details = (onClose: () => void) => (
+    <ContactSidebar
+      contact={activeContact}
+      conversation={activeConversation}
+      onAssignChange={handleAssignChange}
+      onContactChange={handleContactChange}
+      onClose={onClose}
+    />
+  );
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -584,46 +660,14 @@ function InboxPageInner() {
         </div>
       )}
 
-      {listLoaded && conversations.length === 0 ? (
-        <div className="bg-background flex flex-1 items-center justify-center overflow-y-auto">
-          <EmptyState
-            illustration="chat"
-            title={tThread("emptyTitle")}
-            description={tThread("emptyHint")}
-            action={
-              <Link href="/settings?tab=whatsapp" className={buttonVariants()}>
-                <PlugZap />
-                {tThread("connectWhatsApp")}
-              </Link>
-            }
-            secondaryAction={
-              <Link href="/broadcasts/new" className={buttonVariants({ variant: "outline" })}>
-                <Megaphone />
-                {tThread("sendBroadcast")}
-              </Link>
-            }
-          />
-          {/* Keep the list mounted (hidden) so realtime inserts still land. */}
-          <div className="hidden">
-            <ConversationList
-              activeConversationId={null}
-              onSelect={handleSelectConversation}
-              conversations={conversations}
-              onConversationsLoaded={handleConversationsLoaded}
-              resyncToken={resyncToken}
-            />
-          </div>
-        </div>
-      ) : (
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left panel: Conversation list.
-            Hidden on mobile when a conversation is selected so the
-            thread can occupy the full width. Always visible on lg+. */}
-        <div
-          className={cn(
-            "flex h-full flex-1 lg:flex-none",
-            hasActiveConv ? "hidden lg:flex" : "flex",
-          )}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* Context panel: the chat list. Docked (resizable, Ctrl+B) at lg+;
+            below lg it fills the screen until a chat opens, WhatsApp-mobile
+            style. Kept mounted with no chats so realtime inserts land. */}
+        <ContextPanel
+          title={tNav("items.inbox")}
+          compact="inline"
+          hiddenCompact={hasActiveConv || noConversations}
         >
           <ConversationList
             activeConversationId={activeConversation?.id ?? null}
@@ -631,53 +675,92 @@ function InboxPageInner() {
             conversations={conversations}
             onConversationsLoaded={handleConversationsLoaded}
             resyncToken={resyncToken}
+            freshIds={freshIds}
+            keyboardNav={listDocked || !hasActiveConv}
           />
-        </div>
+        </ContextPanel>
 
-        {/* Center panel: Message thread.
-            Hidden on mobile when no conversation is selected so the
-            list can occupy the full width. Always visible on lg+
-            (shows its own empty-state if no thread is picked yet).
-
+        {/* Main: the chat. Below lg it only shows once a chat is open.
             `min-w-0` is load-bearing: without it, a single wide piece
             of content inside the thread (long quote preview, very
             long URL in a message body) forces the flex child past
-            its share and pushes the contact-sidebar panel off-screen
-            on the right. Issue #165. */}
+            its share and pushes the details panel off-screen on the
+            right. Issue #165. */}
         <div
           className={cn(
-            "flex h-full min-w-0 flex-1 lg:flex",
-            hasActiveConv ? "flex" : "hidden lg:flex",
+            "h-full min-w-0 flex-1",
+            hasActiveConv || noConversations ? "flex" : "hidden lg:flex",
           )}
         >
-          <MessageThread
-            conversation={activeConversation}
-            contact={activeContact}
-            messages={messages}
-            onMessagesLoaded={handleMessagesLoaded}
-            onNewMessage={handleNewMessage}
-            onUpdateMessage={handleUpdateMessage}
-            onStatusChange={handleStatusChange}
-            onAssignChange={handleAssignChange}
-            onBack={handleCloseConversation}
-            resyncToken={resyncToken}
-            onRefresh={handleManualRefresh}
-            contactPanelOpen={contactPanelOpen}
-            onToggleContactPanel={handleToggleContactPanel}
-          />
+          {noConversations ? (
+            <div className="flex flex-1 items-center justify-center overflow-y-auto bg-background">
+              <EmptyState
+                illustration="chat"
+                title={tThread("emptyTitle")}
+                description={tThread("emptyHint")}
+                action={
+                  <Link href="/settings?tab=whatsapp" className={buttonVariants()}>
+                    <PlugZap />
+                    {tThread("connectWhatsApp")}
+                  </Link>
+                }
+                secondaryAction={
+                  <Link href="/broadcasts/new" className={buttonVariants({ variant: "outline" })}>
+                    <Megaphone />
+                    {tThread("sendBroadcast")}
+                  </Link>
+                }
+              />
+            </div>
+          ) : (
+            <MessageThread
+              conversation={activeConversation}
+              contact={activeContact}
+              messages={messages}
+              onMessagesLoaded={handleMessagesLoaded}
+              onNewMessage={handleNewMessage}
+              onUpdateMessage={handleUpdateMessage}
+              onStatusChange={handleStatusChange}
+              onAssignChange={handleAssignChange}
+              onBack={handleCloseConversation}
+              resyncToken={resyncToken}
+              onRefresh={handleManualRefresh}
+              contactPanelOpen={hasActiveConv && detailsOpen}
+              onToggleContactPanel={handleToggleContactPanel}
+            />
+          )}
         </div>
 
-        {/* Right panel: Contact sidebar — desktop only, and only when the
-            agent hasn't collapsed it via the thread-header toggle (#258).
-            On mobile it's always hidden (the `lg:block` below), so the
-            toggle — which is itself desktop-only — never affects it. */}
-        {contactPanelOpen && (
-          <div className="hidden lg:block">
-            <ContactSidebar contact={activeContact} />
-          </div>
-        )}
+        {/* Details panel, docked at 1280px+ ("i" in the thread header). */}
+        {detailsDockable && contactPanelOpen && hasActiveConv ? (
+          <div className="hidden xl:block">{details(handleToggleContactPanel)}</div>
+        ) : null}
       </div>
-      )}
+
+      {/* Below 1280px the details panel is an overlay drawer. */}
+      {!detailsDockable && hasActiveConv ? (
+        <>
+          <button
+            type="button"
+            aria-label={tShell("closeDetails")}
+            tabIndex={-1}
+            onClick={() => setDetailsOverlayOpen(false)}
+            className={cn(
+              "fixed inset-0 z-40 bg-(--overlay) transition-opacity duration-150",
+              detailsOverlayOpen ? "opacity-100" : "pointer-events-none opacity-0",
+            )}
+          />
+          <div
+            inert={!detailsOverlayOpen || undefined}
+            className={cn(
+              "fixed inset-y-0 right-0 z-50 max-w-[calc(100vw-2rem)] shadow-raised transition-transform duration-150 ease-out",
+              detailsOverlayOpen ? "translate-x-0" : "translate-x-[calc(100%+2rem)]",
+            )}
+          >
+            {details(() => setDetailsOverlayOpen(false))}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

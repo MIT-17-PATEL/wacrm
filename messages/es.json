@@ -211,7 +211,15 @@
       "windowHours": "Quedan {hours} h",
       "windowMinutes": "Quedan {minutes} min",
       "windowClosed": "Ventana cerrada",
-      "windowTitle": "Tiempo restante para responder libremente en la ventana de 24 horas de WhatsApp"
+      "windowTitle": "Tiempo restante para responder libremente en la ventana de 24 horas de WhatsApp",
+      "filterMine": "Míos",
+      "filterUnassigned": "Sin asignar",
+      "status": "Estado",
+      "anyStatus": "Cualquier estado",
+      "clearFilters": "Quitar filtros",
+      "pinned": "Fijado",
+      "pin": "Fijar chat",
+      "unpin": "Dejar de fijar"
     },
     "messageThread": {
       "backToConversations": "Volver a las conversaciones",
@@ -385,7 +393,27 @@
       "deals": "Negocios",
       "noTags": "Sin etiquetas",
       "noDeals": "Sin negocios",
-      "addNotePlaceholder": "Agregar una nota..."
+      "addNotePlaceholder": "Agregar una nota...",
+      "name": "Nombre",
+      "email": "Correo",
+      "company": "Empresa",
+      "addEmail": "Añadir correo",
+      "addCompany": "Añadir empresa",
+      "assignee": "Responsable",
+      "unassigned": "Sin asignar",
+      "unassign": "Quitar asignación",
+      "addTag": "Añadir etiqueta",
+      "removeTag": "Quitar etiqueta {name}",
+      "customFields": "Campos personalizados",
+      "emptyValue": "Añadir valor",
+      "dealValue": "Valor del negocio",
+      "stage": "Etapa",
+      "addNote": "Añadir nota",
+      "activity": "Actividad reciente",
+      "activityContactAdded": "Contacto añadido",
+      "activityConversation": "Conversación iniciada",
+      "activityDeal": "Negocio «{title}» creado",
+      "activityNote": "Nota añadida"
     },
     "aiBanner": {
       "pausedTitle": "El asistente de IA está en pausa aquí",
@@ -452,7 +480,8 @@
       "viewUntitled": "Mi vista",
       "removeView": "Quitar la vista {name}",
       "previousPage": "Página anterior",
-      "nextPage": "Página siguiente"
+      "nextPage": "Página siguiente",
+      "segmentHint": "Primero busca o elige etiquetas y luego guárdalo como segmento."
     },
     "form": {
       "addTitle": "Agregar contacto",
@@ -775,7 +804,12 @@
       "errorLoad": "Error al cargar las difusiones",
       "broadcastInProgress": "Difusión en curso",
       "retry": "Reintentar",
-      "replied": "Respondidos"
+      "replied": "Respondidos",
+      "bucket_drafts": "Difusiones en borrador",
+      "bucket_scheduled": "Difusiones programadas",
+      "bucket_sent": "Difusiones enviadas",
+      "bucketEmpty": "Aún no hay nada aquí",
+      "showAll": "Ver todas las difusiones"
     },
     "status": {
       "draft": "Borrador",
@@ -1958,7 +1992,10 @@
       "active": "Activo",
       "accentColor": "Color de acento",
       "useTheme": "Usar el tema {name}",
-      "themeId": "ID del tema: {id}"
+      "themeId": "ID del tema: {id}",
+      "soundTitle": "Sonido",
+      "soundLabel": "Sonido de mensaje nuevo",
+      "soundDesc": "Un aviso suave cuando un chat recibe un mensaje nuevo sin leer. Se guarda en este dispositivo."
     },
     "security": {
       "title": "Acceso y seguridad",
@@ -2932,5 +2969,75 @@
     "tooltipConnected": "WhatsApp está conectado y recibiendo mensajes",
     "tooltipDisconnected": "WhatsApp está desconectado: haz clic para reconectar",
     "tooltipNotConfigured": "Conecta tu número de WhatsApp para empezar a chatear"
+  },
+  "Shell": {
+    "primaryNav": "Principal",
+    "togglePanel": "Mostrar u ocultar panel",
+    "collapsePanel": "Contraer panel",
+    "closePanel": "Cerrar panel",
+    "resizePanel": "Cambiar tamaño del panel",
+    "closeDetails": "Cerrar detalles",
+    "unreadCount": "{count} sin leer",
+    "whatsappDown": "WhatsApp no está conectado",
+    "accountMenu": "Menú de cuenta",
+    "shortcuts": "Atajos de teclado",
+    "undo": "Deshacer",
+    "movedTo": "Movido a {stage}",
+    "dealWon": "Negocio ganado",
+    "saveFailed": "No se pudo guardar; se deshizo el cambio",
+    "assignedTo": "Asignado a {name}",
+    "unassigned": "Sin asignar",
+    "tagRemoved": "Etiqueta {name} quitada",
+    "contacts": {
+      "search": "Buscar contactos",
+      "segments": "Segmentos",
+      "all": "Todos los contactos",
+      "newThisWeek": "Nuevos esta semana",
+      "byTag": "Por etiqueta",
+      "noTags": "Aún no hay etiquetas",
+      "saved": "Segmentos guardados",
+      "savedHint": "Filtra la lista y guárdala aquí.",
+      "newSegment": "Nuevo segmento",
+      "removeSegment": "Quitar segmento {name}"
+    },
+    "pipelines": {
+      "add": "Añadir pipeline",
+      "empty": "Aún no hay pipelines",
+      "deals": "{count, plural, =1 {# negocio} other {# negocios}}"
+    },
+    "broadcasts": {
+      "new": "Nueva difusión",
+      "all": "Todas las difusiones",
+      "drafts": "Borradores",
+      "scheduled": "Programadas",
+      "sent": "Enviadas"
+    },
+    "automate": {
+      "overview": "Todo: {name}",
+      "on": "Activo",
+      "off": "Inactivo",
+      "notSetUp": "Sin configurar",
+      "more": "{count} más",
+      "newAutomation": "Nueva automatización",
+      "newFlow": "Nuevo flujo",
+      "agent": "Agente de IA",
+      "setUpAgent": "Configurar agente de IA",
+      "playground": "Área de pruebas"
+    },
+    "shortcutsSheet": {
+      "title": "Atajos de teclado",
+      "description": "Pulsa ? en cualquier lugar para abrir esta lista.",
+      "general": "General",
+      "palette": "Buscar y comandos",
+      "togglePanel": "Mostrar u ocultar panel",
+      "closePanels": "Cerrar panel o chat",
+      "help": "Esta ayuda",
+      "goTo": "Ir a",
+      "nextChat": "Chat anterior / siguiente",
+      "openChat": "Abrir chat",
+      "quickReplies": "Respuestas rápidas (cuadro vacío)",
+      "send": "Enviar mensaje",
+      "newLine": "Nueva línea"
+    }
   }
 }

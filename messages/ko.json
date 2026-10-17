@@ -211,7 +211,15 @@
       "windowHours": "{hours}시간 남음",
       "windowMinutes": "{minutes}분 남음",
       "windowClosed": "응답 가능 시간 종료",
-      "windowTitle": "WhatsApp 24시간 창에서 자유롭게 답장할 수 있는 남은 시간"
+      "windowTitle": "WhatsApp 24시간 창에서 자유롭게 답장할 수 있는 남은 시간",
+      "filterMine": "내 채팅",
+      "filterUnassigned": "미배정",
+      "status": "상태",
+      "anyStatus": "모든 상태",
+      "clearFilters": "필터 지우기",
+      "pinned": "고정됨",
+      "pin": "채팅 고정",
+      "unpin": "고정 해제"
     },
     "messageThread": {
       "backToConversations": "대화 목록으로 돌아가기",
@@ -385,7 +393,27 @@
       "deals": "딜",
       "noTags": "태그 없음",
       "noDeals": "딜 없음",
-      "addNotePlaceholder": "메모 추가..."
+      "addNotePlaceholder": "메모 추가...",
+      "name": "이름",
+      "email": "이메일",
+      "company": "회사",
+      "addEmail": "이메일 추가",
+      "addCompany": "회사 추가",
+      "assignee": "담당자",
+      "unassigned": "미배정",
+      "unassign": "배정 해제",
+      "addTag": "태그 추가",
+      "removeTag": "{name} 태그 제거",
+      "customFields": "사용자 지정 필드",
+      "emptyValue": "값 추가",
+      "dealValue": "거래 금액",
+      "stage": "단계",
+      "addNote": "메모 추가",
+      "activity": "최근 활동",
+      "activityContactAdded": "연락처 추가됨",
+      "activityConversation": "대화 시작됨",
+      "activityDeal": "“{title}” 거래 생성됨",
+      "activityNote": "메모 추가됨"
     },
     "aiBanner": {
       "pausedTitle": "이 대화에서 AI 어시스턴트가 일시 중지됨",
@@ -452,7 +480,8 @@
       "viewUntitled": "내 보기",
       "removeView": "{name} 보기 삭제",
       "previousPage": "이전 페이지",
-      "nextPage": "다음 페이지"
+      "nextPage": "다음 페이지",
+      "segmentHint": "먼저 검색하거나 태그를 고른 뒤 세그먼트로 저장하세요."
     },
     "form": {
       "addTitle": "연락처 추가",
@@ -775,7 +804,12 @@
       "errorLoad": "브로드캐스트를 불러오지 못했습니다",
       "broadcastInProgress": "브로드캐스트 진행 중",
       "retry": "다시 시도",
-      "replied": "답장함"
+      "replied": "답장함",
+      "bucket_drafts": "임시 저장된 브로드캐스트",
+      "bucket_scheduled": "예약된 브로드캐스트",
+      "bucket_sent": "발송된 브로드캐스트",
+      "bucketEmpty": "아직 항목이 없습니다",
+      "showAll": "모든 브로드캐스트 보기"
     },
     "status": {
       "draft": "초안",
@@ -1958,7 +1992,10 @@
       "active": "사용 중",
       "accentColor": "강조 색상",
       "useTheme": "{name} 테마 사용",
-      "themeId": "테마 ID: {id}"
+      "themeId": "테마 ID: {id}",
+      "soundTitle": "소리",
+      "soundLabel": "새 메시지 알림음",
+      "soundDesc": "채팅에 읽지 않은 새 메시지가 오면 부드러운 알림음이 울립니다. 이 기기에 저장됩니다."
     },
     "security": {
       "title": "로그인 & 보안",
@@ -2932,5 +2969,75 @@
     "tooltipConnected": "WhatsApp이 연결되어 메시지를 받고 있습니다",
     "tooltipDisconnected": "WhatsApp 연결이 끊겼습니다 — 클릭하여 다시 연결하세요",
     "tooltipNotConfigured": "채팅을 시작하려면 WhatsApp 번호를 연결하세요"
+  },
+  "Shell": {
+    "primaryNav": "주 메뉴",
+    "togglePanel": "패널 전환",
+    "collapsePanel": "패널 접기",
+    "closePanel": "패널 닫기",
+    "resizePanel": "패널 크기 조절",
+    "closeDetails": "세부 정보 닫기",
+    "unreadCount": "읽지 않음 {count}개",
+    "whatsappDown": "WhatsApp이 연결되지 않았습니다",
+    "accountMenu": "계정 메뉴",
+    "shortcuts": "키보드 단축키",
+    "undo": "실행 취소",
+    "movedTo": "{stage}(으)로 이동함",
+    "dealWon": "거래 성사",
+    "saveFailed": "저장하지 못해 변경을 되돌렸습니다",
+    "assignedTo": "{name}에게 배정됨",
+    "unassigned": "배정 해제됨",
+    "tagRemoved": "{name} 태그를 제거함",
+    "contacts": {
+      "search": "연락처 검색",
+      "segments": "세그먼트",
+      "all": "모든 연락처",
+      "newThisWeek": "이번 주 신규",
+      "byTag": "태그별",
+      "noTags": "아직 태그가 없습니다",
+      "saved": "저장된 세그먼트",
+      "savedHint": "목록을 필터링한 뒤 여기에 저장하세요.",
+      "newSegment": "새 세그먼트",
+      "removeSegment": "{name} 세그먼트 삭제"
+    },
+    "pipelines": {
+      "add": "파이프라인 추가",
+      "empty": "아직 파이프라인이 없습니다",
+      "deals": "거래 {count}건"
+    },
+    "broadcasts": {
+      "new": "새 브로드캐스트",
+      "all": "모든 브로드캐스트",
+      "drafts": "임시 저장",
+      "scheduled": "예약됨",
+      "sent": "발송됨"
+    },
+    "automate": {
+      "overview": "전체 {name}",
+      "on": "켜짐",
+      "off": "꺼짐",
+      "notSetUp": "설정 안 됨",
+      "more": "{count}개 더 보기",
+      "newAutomation": "새 자동화",
+      "newFlow": "새 플로우",
+      "agent": "AI 에이전트",
+      "setUpAgent": "AI 에이전트 설정",
+      "playground": "플레이그라운드"
+    },
+    "shortcutsSheet": {
+      "title": "키보드 단축키",
+      "description": "어디서든 ?를 누르면 이 목록이 열립니다.",
+      "general": "일반",
+      "palette": "검색 및 명령",
+      "togglePanel": "패널 표시/숨기기",
+      "closePanels": "패널 또는 채팅 닫기",
+      "help": "도움말",
+      "goTo": "이동",
+      "nextChat": "이전/다음 채팅",
+      "openChat": "채팅 열기",
+      "quickReplies": "빠른 답장(빈 입력창)",
+      "send": "메시지 보내기",
+      "newLine": "줄바꿈"
+    }
   }
 }

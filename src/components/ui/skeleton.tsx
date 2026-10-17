@@ -48,4 +48,30 @@ function SkeletonRows({ rows = 6, columns = 4 }: { rows?: number; columns?: numb
   )
 }
 
-export { Skeleton, SkeletonText, SkeletonRows }
+/** Whole-page placeholder: title, a row of cards and a large block. */
+function PageSkeleton({ variant = "page" }: { variant?: "page" | "editor" }) {
+  if (variant === "editor") {
+    return (
+      <div className="flex h-full flex-col gap-3 p-6" aria-busy>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="ml-auto h-8 w-24 rounded-lg" />
+        </div>
+        <Skeleton className="min-h-64 flex-1 rounded-xl" />
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-5" aria-busy>
+      <Skeleton className="h-8 w-60" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-[10px]" />
+        ))}
+      </div>
+      <Skeleton className="h-72 rounded-[10px]" />
+    </div>
+  )
+}
+
+export { Skeleton, SkeletonText, SkeletonRows, PageSkeleton }

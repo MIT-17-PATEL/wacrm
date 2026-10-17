@@ -109,7 +109,6 @@ html[data-mode="dark"] {
   --sidebar-accent-foreground: #ededef;
   --sidebar-border: #232428;
   --overlay: rgb(0 0 0 / 0.6);
-  --bubble-out: #1f2125;
 
   --success: #3fb37f;
   --warning: #d9a23a;
@@ -153,7 +152,6 @@ html[data-mode="light"] {
   --sidebar-accent-foreground: #18181b;
   --sidebar-border: #e7e6e3;
   --overlay: rgb(24 24 27 / 0.3);
-  --bubble-out: #eeefed;
 
   /* Slightly deeper than dark mode so semantic text stays AA on white. */
   --success: #1f8a5b;
@@ -210,6 +208,8 @@ html {
   --ring: var(--primary);
   --primary-soft: color-mix(in oklab, var(--primary) 10%, transparent);
   --primary-soft-2: color-mix(in oklab, var(--primary) 18%, transparent);
+  /* Outgoing chat bubble: a neutral surface with a hint of the accent. */
+  --bubble-out: color-mix(in oklab, var(--primary) 14%, var(--card-2));
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
   --sidebar-ring: var(--primary);
@@ -300,6 +300,19 @@ html {
   100% {
     transform: translateX(100%);
   }
+}
+
+/* A chat row that just received a message fades from accent tint. */
+@keyframes row-flash {
+  from {
+    background-color: var(--primary-soft-2);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+@utility animate-row-flash {
+  animation: row-flash 1.6s ease-out;
 }
 
 @layer base {

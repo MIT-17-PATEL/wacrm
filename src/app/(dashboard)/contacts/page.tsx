@@ -49,40 +49,25 @@ import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
 import { phoneCountry } from '@/lib/phone-country';
 import { cn } from '@/lib/utils';
+import {
+  SAVE_VIEW_EVENT,
+  useSavedViews,
+  writeViews,
+  type SavedView,
+} from '@/lib/contacts/saved-views';
 import { useFormatter, useTranslations } from 'next-intl';
 
 const PAGE_SIZE = 25;
-const VIEWS_KEY = 'wacrm.contacts.views';
 
 /** Row = contact + the ids of its tags (resolved against tagsMap at render). */
 interface ContactRow extends Contact {
   tagIds: string[];
 }
 
-/** A saved filter ("view"): search text + tag selection, per device. */
-interface SavedView {
-  id: string;
-  name: string;
-  search: string;
-  tagIds: string[];
-}
-
-function readViews(): SavedView[] {
-  try {
-    const raw = localStorage.getItem(VIEWS_KEY);
-    const parsed = raw ? (JSON.parse(raw) as SavedView[]) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeViews(views: SavedView[]) {
-  try {
-    localStorage.setItem(VIEWS_KEY, JSON.stringify(views));
-  } catch {
-    // Private mode — views just won't persist.
-  }
+/** `?since=7d` → ISO timestamp a week ago ("New this week" segment). */
+function sinceFromParam(value: string | null): string | null {
+  if (value !== '7d') return null;
+  return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 }
 
 // `useSearchParams` (the `?q=` deep link from the command palette)
@@ -95,11 +80,11 @@ export default function ContactsPage() {
   );
 }
 
-// Re-mount on a new `?q=` so jumping here from the palette while already
-// on Contacts applies the new search.
+// Re-mount on new filter params (`?q=`, `?tags=`, `?since=`) so the
+// palette and the context panel's segments apply while already here.
 function ContactsPageKeyed() {
-  const q = useSearchParams().get('q') ?? '';
-  return <ContactsPageInner key={q} />;
+  const params = useSearchParams().toString();
+  return <ContactsPageInner key={params} />;
 }
 
 function ContactsPageInner() {
@@ -118,7 +103,12 @@ function ContactsPageInner() {
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   // Tag filter — contacts shown must have ANY of these tags (OR).
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() =>
+    (searchParams.get('tags') ?? '').split(',').filter(Boolean),
+  );
+  // "New this week" segment. Only applies without a tag filter (the tag
+  // RPC has no date parameter); the panel never combines the two.
+  const [since] = useState(() => sinceFromParam(searchParams.get('since')));
 
   // Modals
   const [formOpen, setFormOpen] = useState(false);
@@ -135,10 +125,8 @@ function ContactsPageInner() {
   // All tags for display
   const [tagsMap, setTagsMap] = useState<Record<string, Tag>>({});
 
-  // Saved views (device-local).
-  const [views, setViews] = useState<SavedView[]>(() =>
-    typeof window === 'undefined' ? [] : readViews(),
-  );
+  // Saved views (device-local), shared live with the context panel.
+  const views = useSavedViews();
 
   // Guards against out-of-order fetch responses: each fetchContacts run
   // claims a sequence number and only the latest is allowed to commit its
@@ -212,6 +200,8 @@ function ContactsPageInner() {
           .order('created_at', { ascending: false })
           .range(from, to);
 
+        if (since) query = query.gte('created_at', since);
+
         if (term) {
           const like = `%${term}%`;
           query = query.or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like}`);
@@ -255,7 +245,7 @@ function ContactsPageInner() {
     } finally {
       if (isCurrent()) setLoading(false);
     }
-  }, [supabase, page, search, selectedTagIds, t]);
+  }, [supabase, page, search, selectedTagIds, since, t]);
 
   // Load-once-on-mount-ish data fetches. Each setter inside runs
   // inside an async promise completion (Supabase await), not
@@ -392,11 +382,28 @@ function ContactsPageInner() {
       search: search.trim(),
       tagIds: selectedTagIds,
     };
-    const next = [...views, view];
-    setViews(next);
-    writeViews(next);
+    writeViews([...views, view]);
     toast.success(t('viewSaved'));
   }
+
+  // "+ New segment" in the context panel: save the current filter, or
+  // point the user at the search box when there's nothing to save yet.
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const saveViewRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    saveViewRef.current = () => {
+      if (hasActiveFilters) saveCurrentView();
+      else {
+        toast(t('segmentHint'));
+        searchInputRef.current?.focus();
+      }
+    };
+  });
+  useEffect(() => {
+    const onSave = () => saveViewRef.current();
+    window.addEventListener(SAVE_VIEW_EVENT, onSave);
+    return () => window.removeEventListener(SAVE_VIEW_EVENT, onSave);
+  }, []);
 
   function applyView(view: SavedView) {
     setSearch(view.search);
@@ -405,9 +412,7 @@ function ContactsPageInner() {
   }
 
   function removeView(id: string) {
-    const next = views.filter((v) => v.id !== id);
-    setViews(next);
-    writeViews(next);
+    writeViews(views.filter((v) => v.id !== id));
   }
 
   const isActiveView = (v: SavedView) =>
@@ -459,6 +464,7 @@ function ContactsPageInner() {
           <div className="relative w-full sm:max-w-sm">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -535,7 +541,7 @@ function ContactsPageInner() {
         </div>
 
         {views.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5" aria-label={t('savedViews')}>
+          <div className="flex flex-wrap items-center gap-1.5 lg:hidden" aria-label={t('savedViews')}>
             <span className="mr-1 text-[11px] font-semibold text-muted-foreground ">
               {t('savedViews')}
             </span>
